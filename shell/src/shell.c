@@ -92,15 +92,17 @@ void child_command(enum cmd_pos pos, char* argv[], int left_pipe_read_fd, int ri
   if(pos == middle){
     dup2(right_pipe[1],STDOUT_FILENO);
     dup2(left_pipe_read_fd, STDIN_FILENO);  
+    close(left_pipe_read_fd); // new line
+    close(right_pipe[1]);
+    close(right_pipe[0]);
   }else if(pos == first){
-    dup2(right_pipe[1],STDOUT_FILENO); 
-  }else{
+    dup2(right_pipe[1],STDOUT_FILENO);
+    close(right_pipe[1]);
+    close(right_pipe[0]); 
+  }else if (pos == last){
     dup2(left_pipe_read_fd, STDIN_FILENO);
     close(left_pipe_read_fd);
   }
-
-    close(right_pipe[1]);
-    close(right_pipe[0]);
 
   
   // Now we're ready to run the command. 
@@ -217,8 +219,12 @@ int pipe_and_fork(enum cmd_pos pos, char* argv[], int left_pipe_read_fd) {
     DBG("PARENT <%ld> just forked child <%ld> %s\n", getpid(), pid, argv[0]);
     
     // TODO: Close descriptors if necessary. 
-    close(new_pipe[1]);
+  
  
+  if (pos != last && pos != single) {
+    close(new_pipe[1]);  
+  }
+  
     
     
     

@@ -1,7 +1,7 @@
 DEBUG=y
 
 CC=gcc
-CFLAGS=-Werror -Wall 
+CFLAGS= -Wall -ggdb
 LDFLAGS= 
 
 ifeq ($DEBUG), y)
