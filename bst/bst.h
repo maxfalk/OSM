@@ -48,9 +48,16 @@ typedef int comparator(const void* left, const void* right);
  * NOTE: You can add more fields here.
  */
 struct bst_node {
+    pthread_spinlock_t lock;
     void* data;
     struct bst_node* left;
     struct bst_node* right;
+};
+
+
+struct node_pair {
+    struct bst_node** parent;
+    struct bst_node** child;
 };
 
 
