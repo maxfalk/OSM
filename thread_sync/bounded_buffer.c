@@ -32,8 +32,8 @@ typedef struct {
 buffer_t buffer;
 
 pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;
-sem_t sem_lock_full;
-sem_t sem_lock_empty;
+sem_t sem_lock_full; //NUmber of available places in the buffer. Full when buffer is full.
+sem_t sem_lock_empty; //NUmber of available places in the buffer. Empty when buffer is full.
 
 pthread_t consumer_tid[CONSUMERS], producer_tid[PRODUCERS];
 
@@ -49,16 +49,15 @@ insert_item(int item)
      * access to the buffer and use the existing code to remove an item.
      */
     //mindre lediga platser
-    sem_wait(&sem_lock_empty);
+    sem_wait(&sem_lock_empty); //wait, decrease sem_lock_empty by one if > 0.
     //ta mutex låset
-    pthread_mutex_lock(&mutex_lock);
+    pthread_mutex_lock(&mutex_lock);//Take mutex lock to ensure mutial exclusion on the bounded buffer.
     
-   
     buffer.value[buffer.next_in] = item;
     buffer.next_in = (buffer.next_in + 1) % BUFFER_SIZE;
     //Lämna låset
-    pthread_mutex_unlock(&mutex_lock);
-    sem_post(&sem_lock_full);    
+    pthread_mutex_unlock(&mutex_lock);// unlock mutex lock
+    sem_post(&sem_lock_full); //Signal, add one to sem_lock_full   
 
     return 0;
 }
@@ -75,16 +74,16 @@ remove_item(int *item)
      * access to the buffer and use the existing code to remove an item.
      */
     //fler lediga platser
-    sem_wait(&sem_lock_full);
+    sem_wait(&sem_lock_full);//wait, decrease sem_lock_full by one if > 0.
     //ta mutex låset
-    pthread_mutex_lock(&mutex_lock);
+    pthread_mutex_lock(&mutex_lock);//Take mutex lock to ensure mutial exclusion on the bounded buffer.
     *item = buffer.value[buffer.next_out];
     buffer.value[buffer.next_out] = -1;
     buffer.next_out = (buffer.next_out + 1) % BUFFER_SIZE;
     //Lämna låset
-    pthread_mutex_unlock(&mutex_lock);
+    pthread_mutex_unlock(&mutex_lock);// unlock mutex lock
     //get tillbaka empty låset
-    sem_post(&sem_lock_empty);
+    sem_post(&sem_lock_empty); //Signal, add one to sem_lock_empty   
     return 0;
 }
 
@@ -150,9 +149,9 @@ main()
 
     srand(time(NULL));
     sem_init(&sem_lock_empty,0,BUFFER_SIZE);
-    sem_init(&sem_lock_full,0,BUFFER_SIZE);
-    int n;
-    for(n = 0; n < BUFFER_SIZE; n++) sem_wait(&sem_lock_full);
+    sem_init(&sem_lock_full,0,0);
+   
+   
 
     /* Create the consumer threads */
     for (i = 0; i < CONSUMERS; i++)

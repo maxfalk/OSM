@@ -19,7 +19,7 @@
 #define MAX_SLEEP_TIME 3
 
 
-
+//Two semaphores to keep track of the progress of the diffrent threads.
 sem_t sem_lock;
 sem_t sem_lock2;
 
@@ -31,12 +31,15 @@ void *
 threadA(void *param __attribute__((unused)))
 { 
     int i;
-    
+    /*
+      locks sem_lock and increases sem_lock2, this ensures that after each iteration it wait for the other thread to
+      complete.
+     */
     for (i = 0; i < LOOPS; i++) {
         sem_wait(&sem_lock);
         //Critical section
 	printf("threadA --> %d iteration\n", i);
-        //sleep(rand() % MAX_SLEEP_TIME);
+        sleep(rand() % MAX_SLEEP_TIME);
         sem_post(&sem_lock2);
         
     } 
@@ -49,12 +52,16 @@ void *
 threadB(void *param  __attribute__((unused)))
 { 
     int i;
-    
+   
+    /*
+      locks sem_lock2 and increases sem_lock, this ensures that after each iteration it wait for the other thread to
+      complete.
+     */ 
     for (i = 0; i < LOOPS; i++) {
         sem_wait(&sem_lock2);
         //Critical section
 	printf("threadB --> %d iteration\n", i);
-        //sleep(rand() % MAX_SLEEP_TIME);
+        sleep(rand() % MAX_SLEEP_TIME);
         sem_post(&sem_lock);
     
     } 
@@ -66,6 +73,7 @@ int
 main()
 {
     pthread_t tidA, tidB;
+    //initate 
     sem_init(&sem_lock,0,1);
     sem_init(&sem_lock2,0,1);
 

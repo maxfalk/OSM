@@ -38,17 +38,19 @@ int atomic_sub_add = 1;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Access to the shared counter should be protected by a mutex */
-void *
-inc_mutex(void *arg __attribute__((unused)))
+void *inc_mutex(void *arg __attribute__((unused)))
 {
     int i;
 
-    /* TODO 1: Protect access to the shared variable */
+    /* 
+      Lock critical section a mutex lock.
+      So that no other thread can interupt this thread.
+    */
    pthread_mutex_lock(&mutex);   
    for (i = 0; i < INC_ITERATIONS; i++) {
         counter += INCREMENT;
     }
-        pthread_mutex_unlock(&mutex);
+   pthread_mutex_unlock(&mutex);
     return NULL;
 }
 
@@ -57,8 +59,11 @@ dec_mutex(void *arg __attribute__((unused)))
 {
     int i;
 
-    /* TODO 1: Protect access to the shared variable */
-     pthread_mutex_lock (&mutex);
+    /* 
+       Lock critical section, with a mutex lock.
+       To ensure that the the whole write is done "as if atomic"
+     */
+    pthread_mutex_lock (&mutex);
     for (i = 0; i < DEC_ITERATIONS; i++) {
         counter -= DECREMENT;
     }
@@ -74,12 +79,15 @@ inc_cas(void *arg __attribute__((unused)))
 {
     int i;
 
-    /* TODO 2: Use the compare and swap primitive to manipulate the shared
-     * variable */
+    /*
+      Uses the atomic compare and swap and tries to take the lock.
+      Tries to swap lock with 1 (1 represents that the lock is taken).
+      returns the vaule swaped to.
+     */
     while(__sync_val_compare_and_swap(&lock,0,1) != 0)
         ;          
     for (i = 0; i < INC_ITERATIONS; i++) {
-        counter += INCREMENT; // You need to replace this           
+        counter += INCREMENT; 
     }
     lock = 0;
     return NULL;
@@ -90,12 +98,15 @@ dec_cas(void *arg __attribute__((unused)))
 {
     int i;
 
-    /* TODO 2: Use the compare and swap primitive to manipulate the shared
-     * variable */
-   while(__sync_val_compare_and_swap(&lock,0,1) != 0)
+    /* 
+       Uses the atomic compare and swap and tries to take the lock.
+       Tries to swap lock with 1 (1 represents that the lock is taken).
+       returns the vaule swaped to. 
+    */
+  while(__sync_val_compare_and_swap(&lock,0,1) != 0)
        ;         
     for (i = 0; i < DEC_ITERATIONS; i++) {
-        counter -= DECREMENT; // You need to replace this
+        counter -= DECREMENT; 
     }
     lock = 0;
     return NULL;
@@ -109,7 +120,9 @@ inc_atomic(void *arg __attribute__((unused)))
 {
     int i;
 
-    /* TODO 3: Use atomic primitives to manipulate the shared variable */ 
+    /* 
+       Uses fetch and add atomic to add the shared varibel counter.
+     */ 
     for (i = 0; i < INC_ITERATIONS; i++) {
         __sync_fetch_and_add(&counter,INCREMENT);
         
@@ -124,7 +137,10 @@ dec_atomic(void *arg __attribute__((unused)))
 {
     int i;
 
-    /* TODO 3: Use atomic primitives to manipulate the shared variable */
+    /* 
+       Uses fetch and sub atomic to add the shared varibel counter.
+     */ 
+
     for (i = 0; i < DEC_ITERATIONS; i++) {
         __sync_fetch_and_sub(&counter,DECREMENT);  
     
