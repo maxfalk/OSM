@@ -10,7 +10,7 @@
 # change to y to enable debugging support
 DEBUG:=
 
-CFLAGS=-pthread -Wall -Wextra -std=c99 -D_XOPEN_SOURCE=600
+CFLAGS=-pthread -Wall -ggdb -Wextra -std=c99 -D_XOPEN_SOURCE=600
 LDLIBS=-pthread -lrt
 
 CC=gcc
@@ -27,6 +27,8 @@ all: bst_test
 
 bst_test: bst_test.o bst.o timing.o
 
+bst_test_v2: bst_test.o bst_v2.o timing.o 
+	$(CC) $(CFLAGS) bst_test.o bst_v2.o timing.o -o bst_test_v2	
 clean:
 	$(RM) *.o *.d *~
 

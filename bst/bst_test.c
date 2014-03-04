@@ -68,8 +68,7 @@ bst_tree_fini(struct bst_node ** root)
 }
 
 
-void *
-run(void *_conf)
+void *run(void *_conf)
 {
     struct timespec ts;
     struct conf_t *conf = (struct conf_t *)_conf;
@@ -182,7 +181,7 @@ int main()
     int *data;
     struct bst_node** root = NULL;
     const int nthreads = 4;
-    const int thread_iterations = 100000;//1000000;
+    const int thread_iterations = 100000;
     const int iterations = nthreads * thread_iterations;
     const int n = iterations;
 
@@ -204,8 +203,9 @@ int main()
     profile_mutli_threaded(root, data, nthreads, thread_iterations,
                            node_delete_ts_cg);
     bst_tree_fini(root);
+    
 
-    printf("Multi threaded run (Fine-grained locking): ");
+    puts("Multi threaded run (Fine-grained locking): ");
     root = bst_tree_init(data, n);
     assert(root != NULL);
     profile_mutli_threaded(root, data, nthreads, thread_iterations,

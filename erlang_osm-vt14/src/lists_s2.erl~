@@ -1,4 +1,4 @@
--module(list).
+-module(lists_s2).
 -export([max/1, split/2, pmax/2]).
 
 %% To use EUnit we must include this:
@@ -76,7 +76,8 @@ pmax(List, N, Death) when length(List) > N ->
     Lists = split(List, N),
     CollectPID = self(),
     List_worker = [{spawn_link(fun() -> worker(L, CollectPID, Death) end),L} || L <- Lists],
-    Maxes = collect(length(Lists), [],List_worker,Death),
+    Worker_handler_pid = spawn_link(fun()-> worker_handler(List_worker,CollectPID,Death) end),
+    Maxes = collect(length(Lists), [],Worker_handler_pid),
     pmax(Maxes, N, Death);
 pmax(List, _, _) ->
     list:max(List). 
@@ -86,6 +87,9 @@ pmax(List, _, _) ->
 worker(List, Collect, Death) ->
     death:gamble(Death),
     Collect ! list:max(List).
+
+
+%% get
 
 
 %% Search for the pid in List, return that list and the rest of the list in a tuple
@@ -104,29 +108,52 @@ get_list_for_pid([H|T],Pid,Restlist) ->
 
 
 %% Start the worker that died again
-restart_worker(List,Death)->
-    CollectPID = self(),
+restart_worker(List,CollectPID, Death)->
     spawn_link(fun() -> worker(List, CollectPID, Death) end).
 
 
-   
-%% Wait for results from all workers. 
-collect(N, Maxes,List_worker,Death) when length(Maxes) < N ->
-    receive 
+%%
+
+worker_handler(List_worker,CollectPid,Death)->
+    
+    receive
 	{'EXIT', PID, random_death} ->
-            %%Process was killed, Start it again
             %%Check for the list that the dead process owned.
             {Dropped_list,Rest} = get_list_for_pid(List_worker,PID),
             %%Start the process again, and update our worker list.
-            New_worker_list = [{restart_worker(Dropped_list,Death),Dropped_list}|Rest],
-            collect(N, Maxes,New_worker_list,Death);
+            New_worker_list = [{restart_worker(Dropped_list,CollectPid,Death),Dropped_list}|Rest],
+            %%loop back
+            worker_handler(New_worker_list,CollectPid,Death);
 	{'EXIT', _PID, normal} ->
-	    collect(N, Maxes,List_worker,Death);
+            worker_handler(List_worker,CollectPid,Death);
+        {start,Startpid}->
+            process_flag(trap_exit, true),
+            %%Check for the list that the dead process owned.
+            {Dropped_list,Rest} = get_list_for_pid(List_worker,Startpid),
+            %%Start the process again, and update our worker list.
+            New_worker_list = [{restart_worker(Dropped_list,CollectPid,Death),Dropped_list}|Rest],
+            %%io:format("Dropped liste = ~w~n", [Dropped_list]),
+            %%loop back
+            worker_handler(New_worker_list,CollectPid,Death)
+     
+    end.
+            
+
+   
+%% Wait for results from all workers. 
+collect(N, Maxes,Worker_handler_pid) when length(Maxes) < N ->
+    receive 
+	{'EXIT', PID, random_death} ->
+            %%Process was killed, Start it again
+            Worker_handler_pid ! {start,PID},
+            collect(N, Maxes,Worker_handler_pid);
+	{'EXIT', _PID, normal} ->
+	    collect(N, Maxes,Worker_handler_pid);
 	Max -> 
-	    collect(N, [Max|Maxes],List_worker,Death) 
+	    collect(N, [Max|Maxes],Worker_handler_pid) 
     end;
 
-collect(_N, Maxes,_List_worker,_Death) ->
+collect(_N, Maxes,_Worker_handler_pid) ->
     %%io:format("Collected Maxes = ~w~n", [Maxes]),
     Maxes.
 

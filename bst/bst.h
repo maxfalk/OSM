@@ -54,12 +54,12 @@ struct bst_node {
     struct bst_node* right;
 };
 
-
+/*
 struct node_pair {
     struct bst_node** parent;
     struct bst_node** child;
 };
-
+*/
 
 
 struct bst_node ** tree_init(void);
