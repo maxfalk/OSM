@@ -7,7 +7,8 @@
 
 %% @doc Find the max value in a list using a sequential, recursive
 %% solution.
--spec max(List) -> integer() when List::list().
+-spec max(List) -> integer() when List::list();
+         ([]) -> {undefined::atom(),empty_list::atom()}.
 
 max([]) ->
     {undefined, empty_list};
@@ -36,6 +37,17 @@ pmax(List, N) ->
     Death = death:start(60),
     pmax(List, N, Death).
 
+
+%%Helper function, starts the max caluclations in diffrent processes
+pmax(List, N, Death) when length(List) > N ->
+    Lists = split(List, N),
+    CollectPID = self(),
+    List_worker = [{spawn_link(fun() -> worker(L, CollectPID, Death) end),L} || L <- Lists],
+    Maxes = collect(length(Lists), [],List_worker,Death),
+    pmax(Maxes, N, Death);
+pmax(List, _, _) ->
+    list:max(List). 
+
 %% @doc Split a list L into lists of lengt N. 
 -spec split(List, N) -> [list()] when List::list(),
 				      N::integer().
@@ -45,8 +57,7 @@ pmax(List, N) ->
 %% get two lists of lenght 2 and one list of length 1.
 %% Fixed so it works 0 and less.
 %% Fixed now always returns a list of list(s).
-
-
+ 
 %% Can' split something in 0 parts?
 split(L, N) when N < 1 ->
     [L];
@@ -72,23 +83,16 @@ split(L, N, Lists) ->
     end.
 
 
-pmax(List, N, Death) when length(List) > N ->
-    Lists = split(List, N),
-    CollectPID = self(),
-    List_worker = [{spawn_link(fun() -> worker(L, CollectPID, Death) end),L} || L <- Lists],
-    Maxes = collect(length(Lists), [],List_worker,Death),
-    pmax(Maxes, N, Death);
-pmax(List, _, _) ->
-    list:max(List). 
     
-%% Find the max value in List and send result to Collect. 
-
+%%@doc Find the max value in List and send result to Collect. 
+-spec worker(List::list(),Collect::pid(),Death::pid()) -> pid().
 worker(List, Collect, Death) ->
     death:gamble(Death),
     Collect ! list:max(List).
 
 
-%% Search for the pid in List, return that list and the rest of the list in a tuple
+%%@doc Search for the pid in List, return that list and the rest of the list in a tuple
+-spec get_list_for_pid(List::list(),Pid::pid()) -> {list(),list()}. 
 get_list_for_pid(List,Pid)->
     get_list_for_pid(List,Pid,[]).
 
@@ -103,14 +107,17 @@ get_list_for_pid([H|T],Pid,Restlist) ->
           
 
 
-%% Start the worker that died again
+%%@doc Restart the worker that died
+-spec restart_worker(List::list(),Death::pid()) -> pid(). 
 restart_worker(List,Death)->
     CollectPID = self(),
     spawn_link(fun() -> worker(List, CollectPID, Death) end).
 
 
    
-%% Wait for results from all workers. 
+%%@doc Wait for results from all workers and collect them in to a list.
+-spec collect(N::integer(),Maxes::list(),List_worker::list(),Death::pid()) -> list().
+
 collect(N, Maxes,List_worker,Death) when length(Maxes) < N ->
     receive 
 	{'EXIT', PID, random_death} ->
@@ -176,4 +183,12 @@ pmax_random_plist_test() ->
     N = 10000,
     L = random_list(N),
     ?assertEqual(lists:max(L), pmax(L, 10)).
+
+
+get_list_for_pid_test()->    
+    List =[{spawn(fun()-> exit(0) end), random_list(10)} || lists:seq(0,9)],
+    {L1,Pid1} = hd(List),
+    ?assert({L1,T1} =:= get_list_for_pid(List,Pid1)),
+    {L2,Pid2} = hd(T1),
+    ?assert({L2,T2} =:= get_list_for_pid(T1,Pid2)).
     

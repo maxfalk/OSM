@@ -5,7 +5,7 @@
 
 -module(utils). 
 
--export([seqs/1, filter/2, split/2, print_text/4]).
+-export([seqs/1, filter/2, split/2]).
 
 %% To use EUnit we must include this.
 -include_lib("eunit/include/eunit.hrl").
@@ -121,73 +121,12 @@ split(List, N) ->
     Len = length(List),
     Q = Len div N,
     R = Len rem N,
-    List.
+    Lists 
 
     
 
 
-%%@doc prints text representing the addition made
-%%
-%%
-%%
--spec print_text(Sum_carry_list::list(),Result::integer())-> ok.
 
-print_text(Sum_carry_pos_list,Result)->
-    print_list([Carry || {_,Carry,_} <- Sum_carry_pos_list,]),
-    print_line(length(Sum_carry_pos_list)),
-    print_list([Carry || {_,Carry,_} <- Sum_carry_pos_list]),
-    print_plus_line(length(Sum_carry_pos_list)),
-    print_number(Result).
-    
-%%@doc prints a line and a plus sign "+--------"
-%%
-%%
-%%
--spec print_plus_line(N::integer())-> ok.
-
-print_plus_line(N)->
-    io:format("+",[]),
-    print_line(N-1).
-
-
-%%@doc sort a sum_carry_pos_list
-%%
-%%
-%%
-
-sort([{_Result,_Carry,Pivot}|T]) ->
-    sort([{_Result,_Carry,X} || {_Result,_Carry,X} <- T, X < Pivot]) ++
-    [{_Result,_Carry,Pivot}] ++
-    sort([{_Result,_Carry,X} || {_Result,_Carry,X} <- T, X >= Pivot]);
-sort([]) -> [].
-
-%%@doc prints all elements of a list, then prints a new line.
-%%
-%%
-%%
--spec print_list(List::list())-> ok.
-
-print_list(List)->
-    [io:format("~p",[H]) || H <- List],
-    io:format("~n",[]).
-    
-%%@doc Prints a line "------" with n "-", then a newline.
-%%
-%%
-%%
--spec print_line(N::integer())-> ok.
-
-print_line(N)->
-    [io:format("-",[]) || _ <- lists:seq(0,N)],
-    io:format("~n",[]).
-%%@doc Prints the Number, then a newline.
-%%
-%%
-%%
--spec print_number(Number::integer())-> ok.
-
-print_number(Number)->
-    io:format("~p~n",[Number]).
 
 
 
@@ -195,6 +134,14 @@ print_number(Number)->
 %%                                                                          %%
 %%			   EUnit Test Cases                                 %%
 %%                                                                          %%
+
+
+
+
+
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 seqs_length_test_() ->

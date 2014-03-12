@@ -41,13 +41,20 @@ pmax(List, N) ->
 				      N::integer().
 
 %% NOTE: This may result in one list having fewer than N elemnts. 
-%%
 %% Example: When splitting a list of length 5 into list of length 2 we
 %% get two lists of lenght 2 and one list of length 1.
+%% Fixed so it works 0 and less.
+%% Fixed now always returns a list of list(s).
+
+
+%% Can' split something in 0 parts?
+split(L, N) when N < 1 ->
+    [L];
+
 
 %% Can we stop splitting?
 split(L, N) when length(L) < N ->
-    L;
+    [L];
 
 %% Do the splitting
 split(L, N) ->
@@ -58,6 +65,8 @@ split(L, N, Lists) ->
     {L1, L2} = lists:split(N, L),
     if length(L2) > N ->
 	    split(L2, N, [L1|Lists]);
+       length(L2) =:= 0 ->
+            [L1];
        true ->
 	    [L1, L2|Lists]
     end.
@@ -66,8 +75,8 @@ split(L, N, Lists) ->
 pmax(List, N, Death) when length(List) > N ->
     Lists = split(List, N),
     CollectPID = self(),
-    [spawn_link(fun() -> worker(L, CollectPID, Death) end) || L <- Lists],
-    Maxes = collect(length(Lists), []),
+    List_worker = [{spawn_link(fun() -> worker(L, CollectPID, Death) end),L} || L <- Lists],
+    Maxes = collect(length(Lists), [],List_worker,Death),
     pmax(Maxes, N, Death);
 pmax(List, _, _) ->
     list:max(List). 
@@ -76,22 +85,49 @@ pmax(List, _, _) ->
 
 worker(List, Collect, Death) ->
     death:gamble(Death),
-    Collect!list:max(List).
+    Collect ! list:max(List).
 
+
+%% Search for the pid in List, return that list and the rest of the list in a tuple
+get_list_for_pid(List,Pid)->
+    get_list_for_pid(List,Pid,[]).
+
+get_list_for_pid([],_Pid,Restlist) ->
+    {[],Restlist};
+get_list_for_pid([{Dead_pid,L}|T],Pid,Restlist) when Dead_pid == Pid->
+    {L,Restlist ++ T};
+get_list_for_pid([H|T],Pid,Restlist) ->
+    get_list_for_pid(T,Pid,[H|Restlist]).
+
+   
+          
+
+
+%% Start the worker that died again
+restart_worker(List,Death)->
+    CollectPID = self(),
+    spawn_link(fun() -> worker(List, CollectPID, Death) end).
+
+
+   
 %% Wait for results from all workers. 
-
-collect(N, Maxes) when length(Maxes) < N ->
+collect(N, Maxes,List_worker,Death) when length(Maxes) < N ->
     receive 
-	{'EXIT', _PID, random_death} ->
-	    collect(N, [-666|Maxes]);
+	{'EXIT', PID, random_death} ->
+            %%Process was killed, Start it again
+            %%Check for the list that the dead process owned.
+            {Dropped_list,Rest} = get_list_for_pid(List_worker,PID),
+            %%Start the process again, and update our worker list.
+            New_worker_list = [{restart_worker(Dropped_list,Death),Dropped_list}|Rest],
+            collect(N, Maxes,New_worker_list,Death);
 	{'EXIT', _PID, normal} ->
-	    collect(N, Maxes);
+	    collect(N, Maxes,List_worker,Death);
 	Max -> 
-	    collect(N, [Max|Maxes]) 
+	    collect(N, [Max|Maxes],List_worker,Death) 
     end;
 
-collect(_N, Maxes) ->
-    io:format("Collected Maxes = ~w~n", [Maxes]),
+collect(_N, Maxes,_List_worker,_Death) ->
+    %%io:format("Collected Maxes = ~w~n", [Maxes]),
     Maxes.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,7 +142,7 @@ collect(_N, Maxes) ->
 split_test_() ->
     List = lists:seq(1,10), 
     
-    [?_assertEqual(List, split(List, length(List)+1)),
+    [?_assertEqual([List], split(List, length(List)+1)),
      ?_assertEqual(5, length(split(List, 2))),
      ?_assertEqual(4, length(split(List, 3))),
      ?_assertEqual([1,3,3,3], lists:sort([length(L) || L <- split(List, 3)])),
