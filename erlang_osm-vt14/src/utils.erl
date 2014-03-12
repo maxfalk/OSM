@@ -113,8 +113,20 @@ lqr(L, N) ->
       N :: integer().
 
 
-split(L, N) ->
-    tbi.
+split([], N) ->
+    []; 
+split(List, N) when N < 2 ->
+    List;
+split(List, N) ->
+    Len = length(List),
+    Q = Len div N,
+    R = Len rem N,
+    Lists 
+
+    
+
+
+
 
 
 
@@ -122,6 +134,14 @@ split(L, N) ->
 %%                                                                          %%
 %%			   EUnit Test Cases                                 %%
 %%                                                                          %%
+
+
+
+
+
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 seqs_length_test_() ->
