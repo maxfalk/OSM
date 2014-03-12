@@ -5,7 +5,7 @@
 
 -module(utils). 
 
--export([seqs/1, filter/2, split/2, print_text/4]).
+-export([seqs/1, filter/2, split/2, pad/3, add/4, print_text/4]).
 
 %% To use EUnit we must include this.
 -include_lib("eunit/include/eunit.hrl").
@@ -87,6 +87,10 @@ lqr(L, N) ->
     
     {Len, Q, R}. 
 
+
+
+
+
 %% @doc Split List into N Lists such that all Lists have approximately the same number of elements. 
 %% 
 %% Let Len = length(List), Q = Len div N and R = Len rem N. 
@@ -112,16 +116,87 @@ lqr(L, N) ->
       T :: term(),
       N :: integer().
 
-
-split([], N) ->
-    []; 
-split(List, N) when N < 2 ->
-    List;
 split(List, N) ->
-    Len = length(List),
-    Q = Len div N,
-    R = Len rem N,
-    List.
+    {_, Q, R} = lqr(List, N),
+    split(List, Q, R).
+
+split([], _, _) ->
+    [];
+split(List, Q, 0) ->
+    {Left, Right} = split_acc([], List, Q), 
+    [Left | split(Right, Q, 0)];
+split(List, Q, R) ->
+    {Left, Right} = split_acc([], List, Q+1), 
+    [Left | split(Right, Q, R-1)].
+
+split_acc(Acc, List, 0) ->
+    {lists:reverse(Acc), List};
+split_acc(Acc, [H|List], N) ->    
+    split_acc([H|Acc], List, N-1).
+
+
+
+
+
+
+%% @doc Add N number of padding elements to the beginning of a list.
+%% 
+%% === Example ===
+%% 
+%% <div class="example">```
+%% 1> utils:pad([1,2,3], 3, 0).
+%% [0,0,0,1,2,3]'''
+%% </div>
+
+-spec pad(List1, N, P) -> List2 when
+      List1 :: list(),
+      N :: integer(),
+      P :: term(),
+      List2 :: list().
+
+pad(List, 0, _) ->
+    List;
+pad(List, N, P) when N > 0 ->
+    pad([P|List], N-1, P).
+
+
+
+
+
+%% @doc Adds two numbers, represented as equally long lists of digits, of any but equal base 
+%% plus a carry in bit and returns the sum as a list of digits and remainders.
+%% 
+%% === Example ===
+%% 
+%% <div class="example">```
+%% 1> utils:add([1,2,3,4,5],[1,2,3,4,5], 10, 1).
+%% [{0,2},{0,4},{0,6},{0,9},{1,1}]
+%% 2> utils:add([1,2,3,4,5],[1,2,3,4,5], 10, 0).
+%% [{0,2},{0,4},{0,6},{0,9},{1,0}]'''
+%% </div>
+
+-spec add(List1, List2, Base, C) -> List3 when
+      N :: integer(),
+      T :: {N, N},
+      C :: integer(),
+      List1 :: [N],
+      List2 :: [N],
+      Base :: integer(),
+      List3 :: [T].
+
+add([A | []], [B | []], Base, C) when Base >= 1, A < Base, B < Base, C =< 1, C >= 0 ->
+    Sum = A + B + C,
+    Quot = Sum div Base,
+    Rem = Sum rem Base,
+    [{Quot, Rem}];
+
+add([A | Left], [B | Right], Base, C) when Base >= 1, A < Base, B < Base ->
+    [{Carry, Result} | List] = add(Left, Right, Base, C),
+    Sum = A + B + Carry,
+    Quot = Sum div Base,
+    Rem = Sum rem Base,
+    [{Quot, Rem} | [{Carry, Result} | List]].
+
 
     
 
