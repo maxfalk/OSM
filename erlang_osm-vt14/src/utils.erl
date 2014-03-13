@@ -220,19 +220,22 @@ inner_list_length([{List,_}|_])-> length(List).
       B :: integer(),
       Sum_carry_list :: list().
 	   
-
+print_text(_,_,[])-> ok;
 print_text(A,B,Sum_carry_pos_list)->
     Sorted_list = sort(Sum_carry_pos_list),
-    Length = inner_list_length(Sorted_list)*length(Sorted_list),
-    print_list(get_carrys(Sorted_list)), %%print carrys in right order
-    print_line(Length), %% print line of right length
-    print_blankspace(1),
-    print_number(A), %% print Number A in right order
-    print_blankspace(1),
-    print_number(B), %% print Number B in right order
-    print_plus_line(Length), %% print line with + sign in the front
-    print_blankspace(1),
-    print_list(get_result(Sorted_list)). %% print the result
+    Length = (inner_list_length(Sorted_list)*length(Sorted_list)),
+    fun()->
+	    print_list(get_carrys(Sorted_list)), %%print carrys in right order
+	    print_line(Length), %% print line of right length
+	    print_blankspace(1),
+	    print_number(A), %% print Number A in right order
+	    print_blankspace(1),
+	    print_number(B), %% print Number B in right order
+	    print_plus_line(Length), %% print line with + sign in the front
+	    print_blankspace(1),
+	    print_list(get_result(Sorted_list))
+	    
+    end. %% print the result
     
 %%@doc prints a line and a plus sign "+--------"
 %%
@@ -264,9 +267,9 @@ sort([]) -> [].
 %%
 -spec print_list(List::list())-> ok.
 
-print_list(List)->
+print_list(List) when length(List) > 0 ->
     [io:format("~p",[H]) || H <- List],
-    io:format("~n",[]).
+    io:format("~n").
     
 %%@doc Prints a line "------" with n "-", then a newline.
 %%
@@ -274,9 +277,11 @@ print_list(List)->
 %%
 -spec print_line(N::integer())-> ok.
 
-print_line(N)->
-    [io:format("-",[]) || _ <- lists:seq(0,N)],
-    io:format("~n",[]).
+
+print_line(N) when N >=0 ->
+    [io:format("-") || _ <- lists:seq(0,N)],
+    io:format("~n");
+print_line(_) -> ok.
 %%@doc Prints the Number, then a newline.
 %%
 %%
@@ -298,9 +303,15 @@ get_carrys([{List,_}|T])->
 %%
 %%
 %%
-get_result([])-> [];
-get_result([{List,_}|T])->
-    [Number || {_,Number} <- List] ++ get_result(T).
+get_result([]) -> [];
+get_result([{[{Carry,_}],_}|_] = List) when Carry =:= 1->
+    [Carry|get_result_help(List)];
+get_result(List) ->
+    get_result_help(List).
+
+get_result_help([]) -> [];
+get_result_help([{List,_}|T])->
+   [Number || {_,Number} <- List] ++ get_result_help(T).
     
     
 %%@doc print a blank space.
@@ -309,7 +320,7 @@ get_result([{List,_}|T])->
 %%
 
 print_blankspace(N)->
-    [io:format(" ",[]) || _ <- lists:seq(1,N)].
+    [io:format(" ") || _ <- lists:seq(1,N)].
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -319,7 +330,7 @@ print_blankspace(N)->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 get_result_test()->
-    ?assert(get_result([{[{1,2}],0}]) =:= [2]),
+    ?assert(get_result([{[{1,2}],0}]) =:= [1,2]),
     ?assert(get_result([{[{0,0},{1,1}],1},{[{0,1},{1,0}],1}]) =:=[0,1,1,0]).
 
 get_carrys_test()->
@@ -338,7 +349,8 @@ sort_test()->
 	   [{[{0,1}],6},{[{0,0}],1},{[{0,1}],0}]).
     
 inner_list_lengt_test()->
-    ?assert(inner_list_length([{[{0,0},{0,0},{0,0}],1}]) =:= 3).
+    ?assert(inner_list_length([{[{0,0},{0,0},{0,0}],1},{[{0,7}],0}]) =:= 3),
+    ?assert(inner_list_length([{[{0,7}],0}]) =:= 1).
 
 seqs_length_test_() ->
     %% The list [[], [1], [1,2], ..., [1,2, ..., N]] will allways have
