@@ -1,7 +1,7 @@
 
 -module(calc). 
 
--export([add/4]).
+-export([start/4]).
 
 %% To use EUnit we must include this.
 -include_lib("eunit/include/eunit.hrl").
@@ -10,8 +10,17 @@
 
 %% CALC
 
--spec start(PID, A, B, Options) -> ok when
-      PID :: pid(),
+
+%% @doc Splits A and B into Split number of similar length lists and 
+%% spawns the same number of processes that will add each corresponding
+%% sublist of A and B in parts.
+%%
+%% Each subprocess will message the ParentPid process with {N, Result},
+%% where N is its sublist number and Result is the sum of the addition 
+%% including carry bits.
+
+-spec start(ParentPid, A, B, Options) -> ok when
+      ParentPid :: pid(),
       A :: integer(),
       B :: integer(),
       Min :: integer(),
@@ -23,26 +32,50 @@
       Options :: {Base, Split, Spawn, Sleep}.
 
 
-start(Pid, A, B, {Base, Split, Spawn, Sleep}) ->
-    {Left, Right} = utils:pad(integer_to_list(A), integer_to_list(B), 0),
+start(ParentPid, A, B, {Base, Split, Spawn, Sleep}) ->
+    {Left, Right} = utils:pad_two(integer_to_list(A), integer_to_list(B), 0),
     {LeftSplit, RightSplit} = {utils:split(Left, Split), utils:split(Right, Split)},
-    spawn_calculators(LeftSplit, RightSplit, Split, {Base, Spawn, Sleep}, todo),
-    Pid ! {tbi}.
-    
+    spawn_calculators(LeftSplit, RightSplit, Split, {Base, Spawn, Sleep}, ParentPid).
 
 
-spawn_calculators(Left, Right, N, Options, ParentPid) when N > 1 ->
+
+
+%% @doc Spawns N number of processes that will add each corresponding
+%% sublist of A and B in parts
+%%
+%% Each subprocess will message the ParentPid process with {N, Result},
+%% where N is its sublist number and Result is the sum of the addition 
+%% including carry bits.
+
+-spec spawn_calculators(Left, Right, N, Options, ParentPid) -> ok when
+      Left :: integer(),
+      Right :: integer(),
+      N :: integer(),
+      ParentPid :: pid(),
+      Min :: integer(),
+      Max :: integer(),
+      Base :: integer(),
+      Spawn :: boolean(),
+      Sleep :: false | {Min, Max},
+      Options :: {Base, Spawn, Sleep}.
+
+
+spawn_calculators(Left, Right, N, Options, ParentPid) when N =:= length(Left) ->
     spawn_calculators_rec(Left, Right, N, Options, ParentPid, ParentPid).
     
 spawn_calculators_rec([A|[]], [B|[]], 1, Options, ParentPid, PreviousPid) -> 
     spawn(?MODULE, calculator, [A, B, 1, Options, ParentPid, PreviousPid]);
 
-spawn_calculators_rec([A|Left], [B|Right], N, Options, ParentPid, PreviousPid) when N > 1 ->
+spawn_calculators_rec([A|Left], [B|Right], N, Options, ParentPid, PreviousPid)  ->
     PidNew = spawn(?MODULE, calculator, [A, B, N, Options, ParentPid, PreviousPid]),
     spawn_calculators_rec(Left, Right, N-1, Options, ParentPid, PidNew).
+
 	    
 
 
+%% @doc Adds A and B after receiving a carry in then messages the PreviousPid 
+%% process with the carry out of the addition and ParentPid with the result
+%% of the addition.
 
 -spec calculator(A, B, N, Options, ParentPid, PreviousPid) -> ok when
       A :: integer(),
@@ -57,8 +90,50 @@ spawn_calculators_rec([A|Left], [B|Right], N, Options, ParentPid, PreviousPid) w
       Sleep :: false | {Min, Max},
       Options :: {Base, Spawn, Sleep}.
 
-calculator(A, B, N, Options, ParentPid, PreviousPid) ->
-    tbi.
+
+calculator(A, B, N, {Base, false, false}, ParentPid, PreviousPid) ->
+    receive 
+	{carry, CarryIn} -> Result = add(A, B, Base, CarryIn)
+    end,
+    [{CarryOut, _} | _] = Result,
+    PreviousPid ! {carry, CarryOut}, 
+    ParentPid ! {N, Result};
+
+calculator(A, B, N, {Base, true, false}, ParentPid, PreviousPid) ->
+    spawn(?MODULE, add, [self(), A, B, Base, 0]),
+    spawn(?MODULE, add, [self(), A, B, Base, 1]),
+    receive
+	{carry, Carry} ->
+	    receive
+		{Carry, Result} -> [{CarryOut, _} | _] = Result
+	    end
+	    %% Kill the other process
+    end,
+    PreviousPid ! {carry, CarryOut},
+    ParentPid ! {N, Result}.
+
+
+
+
+%% @doc Adds List1, List2 and the carry in C in base Base and messages
+%% the ParentPid process with the result.
+
+-spec add_proc(ParentPid, List1, List2, Base, C) -> {C, List3} when
+      ParentPid :: pid(),
+      N :: integer(),
+      T :: {N, N},
+      C :: integer(),
+      List1 :: [N],
+      List2 :: [N],
+      Base :: integer(),
+      List3 :: [T].
+
+
+add_proc(ParentPid, A, B, Base, Carry) ->
+    Result = add(A, B, Base, Carry),
+    ParentPid ! {Carry, Result}.
+
+
 
 
 %% @doc Adds two numbers, represented as equally long lists of digits, of any but equal base 
