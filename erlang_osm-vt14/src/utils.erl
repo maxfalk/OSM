@@ -5,7 +5,7 @@
 
 -module(utils). 
 
--export([seqs/1, filter/2, split/2, pad/3, add/4, print_text/4]).
+-export([seqs/1, filter/2, split/2, pad/3, add/4, print_text/3, get_result/1]).
 
 %% To use EUnit we must include this.
 -include_lib("eunit/include/eunit.hrl").
@@ -200,19 +200,39 @@ add([A | Left], [B | Right], Base, C) when Base >= 1, A < Base, B < Base ->
 
     
 
+%%@doc get inner list length
+%%
+%%
+%%
+-spec inner_list_length(List) -> integer() when
+      List :: list().
+
+inner_list_length([]) -> 0;
+inner_list_length([{List,_}|_])-> length(List).
+    
 
 %%@doc prints text representing the addition made
 %%
 %%
 %%
--spec print_text(Sum_carry_list::list(),Result::integer())-> ok.
+-spec print_text(A,B,Sum_carry_list)-> ok when
+      A :: integer(),
+      B :: integer(),
+      Sum_carry_list :: list().
+	   
 
-print_text(Sum_carry_pos_list,Result)->
-    print_list([Carry || {_,Carry,_} <- Sum_carry_pos_list,]),
-    print_line(length(Sum_carry_pos_list)),
-    print_list([Carry || {_,Carry,_} <- Sum_carry_pos_list]),
-    print_plus_line(length(Sum_carry_pos_list)),
-    print_number(Result).
+print_text(A,B,Sum_carry_pos_list)->
+    Sorted_list = sort(Sum_carry_pos_list),
+    Length = inner_list_length(Sorted_list)*length(Sorted_list),
+    print_list(get_carrys(Sorted_list)), %%print carrys in right order
+    print_line(Length), %% print line of right length
+    print_blankspace(1),
+    print_number(A), %% print Number A in right order
+    print_blankspace(1),
+    print_number(B), %% print Number B in right order
+    print_plus_line(Length), %% print line with + sign in the front
+    print_blankspace(1),
+    print_list(get_result(Sorted_list)). %% print the result
     
 %%@doc prints a line and a plus sign "+--------"
 %%
@@ -225,15 +245,17 @@ print_plus_line(N)->
     print_line(N-1).
 
 
-%%@doc sort a sum_carry_pos_list
+%%@doc sort a sum_carry_pos_list with quick sort, with
+%%biggest part first.
 %%
 %%
-%%
+-spec sort(List) -> list() when
+      List :: list().
 
-sort([{_Result,_Carry,Pivot}|T]) ->
-    sort([{_Result,_Carry,X} || {_Result,_Carry,X} <- T, X < Pivot]) ++
-    [{_Result,_Carry,Pivot}] ++
-    sort([{_Result,_Carry,X} || {_Result,_Carry,X} <- T, X >= Pivot]);
+sort([{Result,Pivot}|T]) ->
+    sort([{XResult,X} || {XResult,X} <- T, X > Pivot]) ++
+    [{Result,Pivot}] ++
+    sort([{XResult,X} || {XResult,X} <- T, X =< Pivot]);
 sort([]) -> [].
 
 %%@doc prints all elements of a list, then prints a new line.
@@ -264,6 +286,30 @@ print_line(N)->
 print_number(Number)->
     io:format("~p~n",[Number]).
 
+%%@doc get carrys from our list 
+%%
+%%
+%%
+get_carrys([])-> [];
+get_carrys([{List,_}|T])->
+   [Carry || {Carry,_} <- List] ++ get_carrys(T).
+
+%%@doc get all the result numbers
+%%
+%%
+%%
+get_result([])-> [];
+get_result([{List,_}|T])->
+    [Number || {_,Number} <- List] ++ get_result(T).
+    
+    
+%%@doc print a blank space.
+%%
+%%
+%%
+
+print_blankspace(N)->
+    [io:format(" ",[]) || _ <- lists:seq(1,N)].
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -271,6 +317,28 @@ print_number(Number)->
 %%			   EUnit Test Cases                                 %%
 %%                                                                          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+get_result_test()->
+    ?assert(get_result([{[{1,2}],0}]) =:= [2]),
+    ?assert(get_result([{[{0,0},{1,1}],1},{[{0,1},{1,0}],1}]) =:=[0,1,1,0]).
+
+get_carrys_test()->
+    ?assert(get_carrys([{[{1,2}],0}]) =:= [1]),
+    ?assert(get_carrys([{[{0,0},{1,1}],1},{[{0,1},{1,0}],1}]) =:=[0,1,0,1]).
+
+%%Just check that it doesn't crash, tests all print functions
+print_text_test()->
+    print_text(10,10,[{[0,2],1},{[0,2],1}]),
+    print_text(12345,12345,
+	       [{[{0,4}],3},{[{0,2}],4},{[{0,9}],1},{[{0,6}],2},{[{1,0}],0}]).
+
+
+sort_test()->
+    ?assert(sort([{[{0,0}],1},{[{0,1}],0},{[{0,1}],6}]) =:= 
+	   [{[{0,1}],6},{[{0,0}],1},{[{0,1}],0}]).
+    
+inner_list_lengt_test()->
+    ?assert(inner_list_length([{[{0,0},{0,0},{0,0}],1}]) =:= 3).
 
 seqs_length_test_() ->
     %% The list [[], [1], [1,2], ..., [1,2, ..., N]] will allways have
