@@ -23,23 +23,23 @@
       Options :: {Base, Split, Spawn, Sleep}.
 
 
-start(PID, A, B, {Base, Split, Spawn, Sleep}) ->
-    {Left, Right} = utils:pad(int_to_list(A), int_to_list(B), 0),
+start(Pid, A, B, {Base, Split, Spawn, Sleep}) ->
+    {Left, Right} = utils:pad(integer_to_list(A), integer_to_list(B), 0),
     {LeftSplit, RightSplit} = {utils:split(Left, Split), utils:split(Right, Split)},
-    Processes = spawn_calculators(LeftSplit, RightSplit, Split, {Base, Spawn, Sleep}, todo),
-    .
+    spawn_calculators(LeftSplit, RightSplit, Split, {Base, Spawn, Sleep}, todo),
+    Pid ! {tbi}.
     
 
 
-spawn_calculators(Left, Right, N, Options, ParentPid) ->
-    spawn_calculators(Left, Right, N, Options, ParentPid, ParentPid).
+spawn_calculators(Left, Right, N, Options, ParentPid) when N > 1 ->
+    spawn_calculators_rec(Left, Right, N, Options, ParentPid, ParentPid).
     
-spawn_calculators([], [], 0, Options, ParentPid, PreviousPid) ->
-    [].
+spawn_calculators_rec([A|[]], [B|[]], 1, Options, ParentPid, PreviousPid) -> 
+    spawn(?MODULE, calculator, [A, B, 1, Options, ParentPid, PreviousPid]);
 
-spawn_calculators([A|Left], [B|Right], N, Options, ParentPid, PreviousPid) ->
-    PidNew = spawn(?Module, calculator, [A, B, N, Options, ParentPid, PreviousPid]),
-    [PidNew | spawn_calculators(Left, Right, N-1, Options, ParentPid, PidNew)].
+spawn_calculators_rec([A|Left], [B|Right], N, Options, ParentPid, PreviousPid) when N > 1 ->
+    PidNew = spawn(?MODULE, calculator, [A, B, N, Options, ParentPid, PreviousPid]),
+    spawn_calculators_rec(Left, Right, N-1, Options, ParentPid, PidNew).
 	    
 
 
@@ -48,6 +48,8 @@ spawn_calculators([A|Left], [B|Right], N, Options, ParentPid, PreviousPid) ->
       A :: integer(),
       B :: integer(),
       N :: integer(),
+      ParentPid :: pid(),
+      PreviousPid :: pid(),
       Min :: integer(),
       Max :: integer(),
       Base :: integer(),
@@ -55,7 +57,8 @@ spawn_calculators([A|Left], [B|Right], N, Options, ParentPid, PreviousPid) ->
       Sleep :: false | {Min, Max},
       Options :: {Base, Spawn, Sleep}.
 
-
+calculator(A, B, N, Options, ParentPid, PreviousPid) ->
+    tbi.
 
 
 %% @doc Adds two numbers, represented as equally long lists of digits, of any but equal base 

@@ -5,7 +5,7 @@
 
 -module(utils). 
 
--export([seqs/1, filter/2, split/2, pad/3, print_text/3, get_result/1]).
+-export([seqs/1, filter/2, split/2, pad/3, pad_two/3, print_text/3, get_result/1]).
 
 
 %% To use EUnit we must include this.
@@ -173,21 +173,21 @@ pad(List, N, P) when N > 0 ->
 %% {[1,2,3], [0,0,3]}'''
 %% </div>
 
--spec pad(List1, List2, P) -> {List3, List4} when
+-spec pad_two(List1, List2, P) -> {List3, List4} when
       P :: term(),
       List1 :: list(),
       List2 :: list(),
       List3 :: list(),
       List4 :: list().
 
-pad(A, B, P) ->
+pad_two(A, B, P) ->
     LenA = length(A),
     LenB = length(B),
     Pad = LenA - LenB,
-    case Pad of
-	Pad < 0 -> {pad(A, -Pad, P), B}; 
-	Pad > 0 -> {A, pad(B, Pad, P)};
-	Pad = 0 -> {A, B}
+    if
+	Pad < 0 -> NewA = pad_two(A, -Pad, P), {NewA, B}; 
+	Pad > 0 -> {A, pad_two(B, Pad, P)};
+	Pad =:= 0 -> {A, B}
     end.
 	    
 
