@@ -5,7 +5,7 @@
 
 -module(utils). 
 
--export([seqs/1, filter/2, split/2, pad/3, add/4, print_text/4]).
+-export([seqs/1, filter/2, split/2, pad/3]).
 
 %% To use EUnit we must include this.
 -include_lib("eunit/include/eunit.hrl").
@@ -163,42 +163,34 @@ pad(List, N, P) when N > 0 ->
 
 
 
-%% @doc Adds two numbers, represented as equally long lists of digits, of any but equal base 
-%% plus a carry in bit and returns the sum as a list of digits and remainders.
+%% @doc Pads the shortest of two lists with P so that the lengths become equal.
 %% 
 %% === Example ===
 %% 
 %% <div class="example">```
-%% 1> utils:add([1,2,3,4,5],[1,2,3,4,5], 10, 1).
-%% [{0,2},{0,4},{0,6},{0,9},{1,1}]
-%% 2> utils:add([1,2,3,4,5],[1,2,3,4,5], 10, 0).
-%% [{0,2},{0,4},{0,6},{0,9},{1,0}]'''
+%% 1> utils:pad([1,2,3], [3], 0).
+%% {[1,2,3], [0,0,3]}'''
 %% </div>
 
--spec add(List1, List2, Base, C) -> List3 when
-      N :: integer(),
-      T :: {N, N},
-      C :: integer(),
-      List1 :: [N],
-      List2 :: [N],
-      Base :: integer(),
-      List3 :: [T].
+-spec pad(List1, List2, P) -> {List3, List4} when
+      P :: term(),
+      List1 :: list(),
+      List2 :: list(),
+      List3 :: list(),
+      List4 :: list().
 
-add([A | []], [B | []], Base, C) when Base >= 1, A < Base, B < Base, C =< 1, C >= 0 ->
-    Sum = A + B + C,
-    Quot = Sum div Base,
-    Rem = Sum rem Base,
-    [{Quot, Rem}];
-
-add([A | Left], [B | Right], Base, C) when Base >= 1, A < Base, B < Base ->
-    [{Carry, Result} | List] = add(Left, Right, Base, C),
-    Sum = A + B + Carry,
-    Quot = Sum div Base,
-    Rem = Sum rem Base,
-    [{Quot, Rem} | [{Carry, Result} | List]].
+pad(A, B, P) ->
+    LenA = length(A),
+    LenB = length(B),
+    Pad = LenA - LenB,
+    case Pad of
+	Pad < 0 -> {pad(A, -Pad, P), B}; 
+	Pad > 0 -> {A, pad(B, Pad, P)};
+	Pad = 0 -> {A, B}
+    end.
+	    
 
 
-    
 
 
 %%@doc prints text representing the addition made
@@ -208,7 +200,7 @@ add([A | Left], [B | Right], Base, C) when Base >= 1, A < Base, B < Base ->
 -spec print_text(Sum_carry_list::list(),Result::integer())-> ok.
 
 print_text(Sum_carry_pos_list,Result)->
-    print_list([Carry || {_,Carry,_} <- Sum_carry_pos_list,]),
+    print_list([Carry || {_,Carry,_} <- Sum_carry_pos_list]),
     print_line(length(Sum_carry_pos_list)),
     print_list([Carry || {_,Carry,_} <- Sum_carry_pos_list]),
     print_plus_line(length(Sum_carry_pos_list)),
