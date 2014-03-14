@@ -48,8 +48,8 @@ start(ParentPid, A, B, {Base, Split, Spawn, Sleep}) ->
 %% including carry bits.
 
 -spec spawn_calculators(Left, Right, N, Options, ParentPid) -> ok when
-      Left :: integer(),
-      Right :: integer(),
+      Left :: list(),
+      Right :: list(),
       N :: integer(),
       ParentPid :: pid(),
       Min :: integer(),
@@ -64,7 +64,8 @@ spawn_calculators(Left, Right, N, Options, ParentPid) when N =:= length(Left) ->
     spawn_calculators_rec(Left, Right, N, Options, ParentPid, ParentPid).
     
 spawn_calculators_rec([A|[]], [B|[]], 1, Options, ParentPid, PreviousPid) -> 
-    spawn(?MODULE, calculator, [A, B, 1, Options, ParentPid, PreviousPid]);
+    PidNew = spawn(?MODULE, calculator, [A, B, 1, Options, ParentPid, PreviousPid]),
+    PidNew ! {carry, 0};
 
 spawn_calculators_rec([A|Left], [B|Right], N, Options, ParentPid, PreviousPid)  ->
     PidNew = spawn(?MODULE, calculator, [A, B, N, Options, ParentPid, PreviousPid]),
@@ -78,8 +79,8 @@ spawn_calculators_rec([A|Left], [B|Right], N, Options, ParentPid, PreviousPid)  
 %% of the addition.
 
 -spec calculator(A, B, N, Options, ParentPid, PreviousPid) -> ok when
-      A :: integer(),
-      B :: integer(),
+      A :: list(),
+      B :: list(),
       N :: integer(),
       ParentPid :: pid(),
       PreviousPid :: pid(),
@@ -100,8 +101,8 @@ calculator(A, B, N, {Base, false, Sleep}, ParentPid, PreviousPid) ->
     ParentPid ! {N, Result};
 
 calculator(A, B, N, {Base, true, Sleep}, ParentPid, PreviousPid) ->
-    PidZero = spawn(?MODULE, add, [self(), A, B, Base, 0, Sleep]),
-    PidOne = spawn(?MODULE, add, [self(), A, B, Base, 1, Sleep]),
+    PidZero = spawn(?MODULE, add_proc, [self(), A, B, Base, 0, Sleep]),
+    PidOne = spawn(?MODULE, add_proc, [self(), A, B, Base, 1, Sleep]),
     receive
 	{carry, CarryIn} ->
 	    case CarryIn of 
@@ -109,10 +110,10 @@ calculator(A, B, N, {Base, true, Sleep}, ParentPid, PreviousPid) ->
 		1 -> exit(PidZero, kill)
 	    end,
 	    receive
-		{CarryIn, Result} -> Result 
+		{result, CarryIn, Result} -> [H | _] = Result,
+					     {CarryOut, _} = H
 	    end
     end,
-    [{CarryOut, _}, _] = Result,
     PreviousPid ! {carry, CarryOut},
     ParentPid ! {N, Result}.
 
@@ -138,7 +139,7 @@ calculator(A, B, N, {Base, true, Sleep}, ParentPid, PreviousPid) ->
 
 add_proc(ParentPid, A, B, Base, Carry, Sleep) ->
     Result = add(A, B, Base, Carry, Sleep),
-    ParentPid ! {Carry, Result}.
+    ParentPid ! {result, Carry, Result}.
 
 
 
@@ -199,5 +200,62 @@ add([A | Left], [B | Right], Base, C, Sleep) when Base >= 1, A < Base, B < Base 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     
+add_test() ->
+    ?assert(add([1,2,3,4,5],[5,4,3,2,1], 10, 0, false) =:= [{0,6},{0,6},{0,6},{0,6},{0,6}]),
+    ?assert(add([1,1,1],[1,1,1], 2, 0, false) =:= [{1,1},{1,1},{1,0}]),
+    ?assert(add([1,1,1],[1,1,1], 2, 0, {5, 10}) =:= [{1,1},{1,1},{1,0}]).
 
 
+add_proc_test() ->
+    Pid = self(),
+    ?assert(add_proc(Pid, [1,1,1],[1,1,1], 2, 0, {5, 10}) =:= {result, 0, [{1,1},{1,1},{1,0}]}),
+    receive
+	{result, 0, Result1} -> ?assert(Result1 =:= [{1,1},{1,1},{1,0}])
+    end,
+    ?assert(add_proc(Pid, [1,1,1],[1,1,1], 2, 1, false) =:= {result, 1, [{1,1},{1,1},{1,1}]}),
+    receive
+	{result, Carry, Result2} -> ?assert(Result2 =:= [{1,1},{1,1},{1,1}]),
+			    ?assert(Carry =:= 1)
+    end.
+
+
+calculator_test() ->
+    Pid = self(),
+    CalcPid1 = spawn(?MODULE, calculator, [[1,1,1], [1,1,1], 1, {2, false, false}, Pid, Pid]),
+    CalcPid1 ! {carry, 1},
+    receive
+	{carry, Carry1} -> ?assert(Carry1 =:= 1)
+    end,
+    receive
+	{N1, Result1} -> ?assert(Result1 =:= [{1,1},{1,1},{1,1}]),
+			 ?assert(N1 =:= 1)
+    end,
+    CalcPid2 = spawn(?MODULE, calculator, [[1,1,1], [1,1,1], 1, {2, true, false}, Pid, Pid]),
+    CalcPid2 ! {carry, 1},
+    receive
+	{carry, Carry2} -> ?assert(Carry2 =:= 1)
+    end,
+    receive
+	{N2, Result2} -> ?assert(Result2 =:= [{1,1},{1,1},{1,1}]),
+			 ?assert(N2 =:= 1)
+    end.
+    
+
+spawn_calculators_test() ->
+    {A, B} = {utils:split([1,2,3,4,5,6,7,8,9], 3), utils:split([9,8,7,6,5,4,3,2,1], 3)},
+    Pid = self(),
+    spawn_calculators(A, B, 3, {10, false, false}, Pid),
+    receive
+	{carry, Carry1} -> ?assert(Carry1 =:= 1),
+			   io:format("hello")
+    end,
+    receive
+	{1, Result1} ->  ?assert(Result1 =:= [{1,1},{1,1},{1,0}]) 
+    end,
+    receive
+	{2, Result2} ->  ?assert(Result2 =:= [{1,1},{1,1},{1,1}]) 
+    end,
+    receive
+	{3, Result3} ->  ?assert(Result3 =:= [{1,1},{1,1},{1,1}]) 
+    end.
+    
