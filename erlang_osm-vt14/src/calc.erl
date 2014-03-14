@@ -64,10 +64,10 @@ start_calc(ParentPid, LeftSplit, RightSplit, {Base, Split, Spawn, Sleep}) ->
 
 
 spawn_calculators(Left, Right, N, Options, ParentPid) when N =:= length(Left) ->
-    spawn_calculators_rec(Left, Right, N, Options, ParentPid, ParentPid).
+    spawn_calculators_rec(Left, Right, N-1, Options, ParentPid, ParentPid).
     
-spawn_calculators_rec([A|[]], [B|[]], 1, Options, ParentPid, PreviousPid) -> 
-    PidNew = spawn(?MODULE, calculator, [A, B, 1, Options, ParentPid, PreviousPid]),
+spawn_calculators_rec([A|[]], [B|[]], 0, Options, ParentPid, PreviousPid) -> 
+    PidNew = spawn(?MODULE, calculator, [A, B, 0, Options, ParentPid, PreviousPid]),
     PidNew ! {carry, 0};
 
 spawn_calculators_rec([A|Left], [B|Right], N, Options, ParentPid, PreviousPid)  ->
@@ -101,7 +101,7 @@ calculator(A, B, N, {Base, false, Sleep}, ParentPid, PreviousPid) ->
     end,
     [{CarryOut, _} | _] = Result,
     PreviousPid ! {carry, CarryOut}, 
-    ParentPid ! {N, Result};
+    ParentPid ! {result, {Result, N}};
 
 calculator(A, B, N, {Base, true, Sleep}, ParentPid, PreviousPid) ->
     PidZero = spawn(?MODULE, add_proc, [self(), A, B, Base, 0, Sleep]),
@@ -118,7 +118,7 @@ calculator(A, B, N, {Base, true, Sleep}, ParentPid, PreviousPid) ->
 	    end
     end,
     PreviousPid ! {carry, CarryOut},
-    ParentPid ! {N, Result}.
+    ParentPid ! {result, {Result, N}}.
 
 
 
@@ -230,7 +230,7 @@ calculator_test() ->
 	{carry, Carry1} -> ?assert(Carry1 =:= 1)
     end,
     receive
-	{N1, Result1} -> ?assert(Result1 =:= [{1,1},{1,1},{1,1}]),
+	{result, {Result1, N1}} -> ?assert(Result1 =:= [{1,1},{1,1},{1,1}]),
 			 ?assert(N1 =:= 1)
     end,
     CalcPid2 = spawn(?MODULE, calculator, [[1,1,1], [1,1,1], 1, {2, true, false}, Pid, Pid]),
@@ -239,7 +239,7 @@ calculator_test() ->
 	{carry, Carry2} -> ?assert(Carry2 =:= 1)
     end,
     receive
-	{N2, Result2} -> ?assert(Result2 =:= [{1,1},{1,1},{1,1}]),
+	{result, {Result2, N2}} -> ?assert(Result2 =:= [{1,1},{1,1},{1,1}]),
 			 ?assert(N2 =:= 1)
     end.
     
@@ -253,12 +253,12 @@ spawn_calculators_test() ->
 			   io:format("hello")
     end,
     receive
-	{1, Result1} ->  ?assert(Result1 =:= [{1,1},{1,1},{1,0}]) 
+	{result, {Result1, 0}} ->  ?assert(Result1 =:= [{1,1},{1,1},{1,0}]) 
     end,
     receive
-	{2, Result2} ->  ?assert(Result2 =:= [{1,1},{1,1},{1,1}]) 
+	{result, {Result2, 1}} ->  ?assert(Result2 =:= [{1,1},{1,1},{1,1}]) 
     end,
     receive
-	{3, Result3} ->  ?assert(Result3 =:= [{1,1},{1,1},{1,1}]) 
+	{result, {Result3, 2}} ->  ?assert(Result3 =:= [{1,1},{1,1},{1,1}]) 
     end.
     

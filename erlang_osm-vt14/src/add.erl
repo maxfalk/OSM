@@ -1,8 +1,8 @@
 %% @doc Erlang mini project.
 -module(add).
--export([start/3, start/4,result/4]).
+-export([start/3, start/4,result/5]).
 %%import utils for utilit functions
--import(utils,[print_text/3,get_result/1,add_carry_first/2]).
+-import(utils,[print_text/3,get_result/1,add_carry_first/2,integer_to_intlist/2]).
 -import(calc,[start_calc/4]).
 %% To use EUnit we must include this.
 -include_lib("eunit/include/eunit.hrl").
@@ -17,11 +17,11 @@
       Base::integer().
 
 start(A, B, Base) ->
-    {Left, Right} = utils:pad_two(integer_to_list(A), integer_to_list(B), 0),
+    {Left, Right} = utils:pad_two(integer_to_intlist(A,Base), integer_to_intlist(B,Base), 0),
     Split = length(Left),
     {LeftSplit, RightSplit} = {utils:split(Left, Split), utils:split(Right, Split)},
-    Result_pid = result(A,B,Split,self()),
-    _First_spawn_pid = calc:start(Result_pid,LeftSplit,RightSplit,{Base,Split,false,false}),
+    Result_pid = spawn(?MODULE,result,[Left,Right,Base,Split,self()]),
+    _First_spawn_pid = calc:start_calc(Result_pid,LeftSplit,RightSplit,{Base,Split,false,false}),
     receive_result().
    
 
@@ -36,10 +36,10 @@ start(A, B, Base) ->
 
 start(A,B,Base,Options) ->
     {Spawn,Sleep,Split} = get_options(Options),
-    {Left, Right} = utils:pad_two(integer_to_list(A), integer_to_list(B), 0),
+    {Left, Right} = utils:pad_two(integer_to_intlist(A,Base), integer_to_intlist(B,Base), 0),    
     {LeftSplit, RightSplit} = {utils:split(Left, Split), utils:split(Right, Split)},
-    Result_pid = result(A,B,Split,self()),
-    _First_spawn_pid = calc:start(Result_pid,LeftSplit,RightSplit,{Base,Split,Spawn,Sleep}),
+    Result_pid = spawn(?MODULE,result,[Left,Right,Base,Split,self()]),
+    _First_spawn_pid = calc:start_calc(Result_pid,LeftSplit,RightSplit,{Base,Split,Spawn,Sleep}),
     receive_result().
       
 
@@ -47,7 +47,7 @@ start(A,B,Base,Options) ->
 -spec get_options(List) -> tuple() when
       List :: list().
 
-get_options(List)-> get_options_help(List,false,false,0).
+get_options(List)-> get_options_help(List,false,false,1).
 
 get_options_help([],Spawn,Sleep,Split)-> {Spawn,Sleep,Split};
 get_options_help([Option|T],Spawn,Sleep,Split)->
@@ -73,54 +73,57 @@ receive_result()->
 
 
 %%@doc Handels partial results, waits for every process to finish and adds them up to one result.
--spec result(A,B,Num_proc,Result_to_pid) -> integer() when
+-spec result(A,B,Base,Num_proc,Result_to_pid) -> integer() when
       A :: integer(),
       B :: integer(),
+      Base :: integer(),
       Num_proc :: integer(),
       Result_to_pid :: pid().
 
-result(A,B,Num_proc,Result_to_pid)->
-    result_handler(A,B,[],Num_proc,Result_to_pid).
+result(A,B,Base,Num_proc,Result_to_pid)->
+    result_handler(A,B,Base,[],Num_proc,Result_to_pid).
 
 %%@doc Waits to receive results from all the spwaned processes, then 
 %%sends back the result and prints the calculations to the screen.
 %%
--spec result_handler(A,B,Sum_carry_pos_list,Num_processes,Result_to_pid) -> integer() when
+-spec result_handler(A,B,Base,Sum_carry_pos_list,Num_processes,Result_to_pid) -> integer() when
       A :: integer(),
       B :: integer(),
+      Base :: integer(),
       Sum_carry_pos_list :: result_list(),
       Num_processes :: integer(),
       Result_to_pid :: pid().
 
 
 
-result_handler(A,B,Sum_carry_pos_list,0,Result_to_pid)->
+result_handler(A,B,Base,Sum_carry_pos_list,0,Result_to_pid)->
     receive
-	{carry,Carry_in} ->
-	    Carry_added_result_list = add_carry_first({0,Carry_in},Sum_carry_pos_list),
-	    Result_list = utils:get_result(Carry_added_result_list),
-	    utils:print_text(A,B,Carry_added_result_list),
-	    Result_to_pid ! convert_list_to_integer(Result_list)
+	{carry,_Carry_in} ->
+	    %%Carry_added_result_list = add_carry_first({0,Carry_in},Sum_carry_pos_list),
+	    Result_list = utils:get_result(Sum_carry_pos_list),
+	    utils:print_text(A,B,Sum_carry_pos_list),
+	    Result_to_pid ! convert_list_to_integer(Result_list,Base)
     end;
-result_handler(A,B,Sum_carry_pos_list,Num_processes,Result_to_pid)->
+result_handler(A,B,Base,Sum_carry_pos_list,Num_processes,Result_to_pid)->
     receive
 	({result,Result_carry_pos})->
-	    result_handler(A,B,[Result_carry_pos|Sum_carry_pos_list],Num_processes-1,Result_to_pid);
+	    result_handler(A,B,Base,[Result_carry_pos|Sum_carry_pos_list],Num_processes-1,Result_to_pid);
         exit ->
             exit
     end.
 
     
 %%@doc converts a string (list) of numbers to an integer of those numbers 
--spec convert_list_to_integer(List)-> integer() when
+-spec convert_list_to_integer(List,Base)-> integer() when
+      Base :: integer(),
       List :: list().
 
-convert_list_to_integer(List)-> 
-    convert_list_to_integer(List,length(List)-1,0).
+convert_list_to_integer(List,Base)-> 
+    convert_list_to_integer(List,length(List)-1,0,Base).
 
-convert_list_to_integer([],_,Acc)-> round(Acc); 
-convert_list_to_integer([H|T],Mult,Acc)-> 
-    convert_list_to_integer(T,Mult-1,Acc+(H*math:pow(10,Mult))).
+convert_list_to_integer([],_,Acc,_)-> round(Acc); 
+convert_list_to_integer([H|T],Mult,Acc,Base)-> 
+    convert_list_to_integer(T,Mult-1,Acc+(H*math:pow(Base,Mult)),Base).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                     Testcases. 
@@ -132,7 +135,7 @@ convert_list_to_integer([H|T],Mult,Acc)->
 
 
 convert_list_to_integer_test()->
-    ?assert(convert_list_to_integer([1,2,3,4,5,6]) =:= 123456).
+    ?assert(convert_list_to_integer([1,2,3,4,5,6],10) =:= 123456).
     
 %%Test that the result call will give the right vaule
 result_nocarry_test()->

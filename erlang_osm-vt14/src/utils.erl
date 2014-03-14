@@ -216,22 +216,22 @@ inner_list_length([{List,_}|_])-> length(List).
       B :: integer(),
       Sum_carry_list :: result_list().
 	   
-print_text(_,_,[])-> ok;
 print_text(A,B,Sum_carry_pos_list)->
     Sorted_list = sort(Sum_carry_pos_list),
-    Length = (inner_list_length(Sorted_list)*length(Sorted_list)),
-    fun()->
-	    print_list(get_carrys(Sorted_list)), %%print carrys in right order
-	    print_line(Length), %% print line of right length
-	    print_blankspace(1),
-	    print_number(A), %% print Number A in right order
-	    print_blankspace(1),
-	    print_number(B), %% print Number B in right order
-	    print_plus_line(Length), %% print line with + sign in the front
-	    print_blankspace(1),
-	    print_list(get_result(Sorted_list))
-	    
-    end. %% print the result
+    Outer_Length = length(Sorted_list),
+    Inner_length = inner_list_length(Sorted_list),
+    Length = Inner_length*Outer_Length,
+    print_list(get_carrys(Sorted_list)), %%print carrys in right order
+    print_line(Length), %% print line of right length
+    print_blankspace(1),
+    print_number(A), %% print Number A in right order
+    print_blankspace(1),
+    print_number(B), %% print Number B in right order
+    print_plus_line(Length), %% print line with + sign in the front
+    {[{Carry,_}|_],_} = hd(Sum_carry_pos_list),
+    print_blankspace(1 - Carry),
+    print_list(get_result(Sorted_list)).	    
+    %% print the result
 
 %%@doc prints a line and a plus sign "+--------"
 %%
@@ -260,24 +260,37 @@ sort([]) -> [].
 %%@doc prints all elements of a list, then prints a new line.
 -spec print_list(List::list())-> ok.
 
-print_list(List) when length(List) > 0 ->
-    [io:format("~p",[H]) || H <- List],
+print_list(List) ->
+    [io:format("~c",[int_to_char(H)]) || H <- List],
     io:format("~n").
     
 %%@doc Prints a line "------" with n "-", then a newline.
 -spec print_line(N::integer())-> ok.
 
 
-print_line(N) when N >=0 ->
+print_line(N) ->
     [io:format("-") || _ <- lists:seq(0,N)],
-    io:format("~n");
-print_line(_) -> ok.
+    io:format("~n").
+
 
 %%@doc Prints the Number, then a newline.
 -spec print_number(Number::integer())-> ok.
+print_number(A)->
+    print_number(A,0).
 
-print_number(Number)->
-    io:format("~p~n",[Number]).
+
+print_number([],1)-> io:format("~n");
+print_number([0],0)->
+    io:format("0"),
+    io:format("~n");
+print_number([0|T],0)->
+    io:format(" "),
+    print_number(T,0);
+print_number([H|T],_) ->
+    io:format("~c",[int_to_char(H)]),
+    print_number(T,1).
+
+
 
 %%@doc get carrys from our list 
 %%
@@ -310,8 +323,9 @@ get_result_help([{List,_}|T])->
 -spec print_blankspace(N)-> ok when
       N :: integer().
 
-print_blankspace(N)->
-    [io:format(" ") || _ <- lists:seq(1,N)].
+print_blankspace(N) when N > 0->
+    [io:format(" ") || _ <- lists:seq(1,N)];
+print_blankspace(N)-> ok.
 
 %%@doc add a new element with the highest position in a result_list,
 %% if the carry is 1 else just return the list unmodified.
@@ -335,6 +349,33 @@ add_first_element(Element,List)->
     [{[Element],length(List)}| List].
     
 
+%%@doc convert a integer to a list of integers
+%%integer_to_intlist(A)->
+ %%   B = [string:to_integer([X]) || X <- (integer_to_list(A))],
+ %%   [Y || {Y,_} <- B].
+
+integer_to_intlist(A,Base)->
+    integer_to_intlist(A,Base,[]).
+
+integer_to_intlist(0,_,Acc)-> Acc;
+integer_to_intlist(A,Base,Acc)->
+    Rest = A rem Base,
+    Kvot = A div Base,
+    integer_to_intlist(Kvot,Base,[Rest|Acc]).
+
+
+%%
+%%
+%%
+int_to_char(N) ->
+    if
+	N < 10 -> N + 48;
+	N >= 10 -> N + 55
+    end.
+		  
+    
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                                                                          %%
@@ -342,6 +383,9 @@ add_first_element(Element,List)->
 %%                                                                          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+integer_to_intlist_test()->
+    ?assert(integer_to_intlist(123,10) =:= [1,2,3]).
 
 add_carry_first_test()->
     ?assert(add_carry_first({1,0},[{[{1,2}],0}]) =:= [{[{1,2}],0}]),
@@ -362,7 +406,7 @@ get_carrys_test()->
 
 %%Just check that it doesn't crash, tests all print functions
 print_text_test()->
-    print_text(10,10,[{[0,2],1},{[0,2],1}]),
+    print_text(10,10,[{[{0,2}],1},{[{0,2}],1}]),
     print_text(12345,12345,
 	       [{[{0,4}],3},{[{0,2}],4},{[{0,9}],1},{[{0,6}],2},{[{1,0}],0}]).
 
