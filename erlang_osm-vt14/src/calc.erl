@@ -91,24 +91,28 @@ spawn_calculators_rec([A|Left], [B|Right], N, Options, ParentPid, PreviousPid)  
       Options :: {Base, Spawn, Sleep}.
 
 
-calculator(A, B, N, {Base, false, false}, ParentPid, PreviousPid) ->
+calculator(A, B, N, {Base, false, Sleep}, ParentPid, PreviousPid) ->
     receive 
-	{carry, CarryIn} -> Result = add(A, B, Base, CarryIn)
+	{carry, CarryIn} -> Result = add(A, B, Base, CarryIn, Sleep)
     end,
     [{CarryOut, _} | _] = Result,
     PreviousPid ! {carry, CarryOut}, 
     ParentPid ! {N, Result};
 
-calculator(A, B, N, {Base, true, false}, ParentPid, PreviousPid) ->
-    spawn(?MODULE, add, [self(), A, B, Base, 0]),
-    spawn(?MODULE, add, [self(), A, B, Base, 1]),
+calculator(A, B, N, {Base, true, Sleep}, ParentPid, PreviousPid) ->
+    PidZero = spawn(?MODULE, add, [self(), A, B, Base, 0, Sleep]),
+    PidOne = spawn(?MODULE, add, [self(), A, B, Base, 1, Sleep]),
     receive
-	{carry, Carry} ->
+	{carry, CarryIn} ->
+	    case CarryIn of 
+		0 -> exit(PidOne, kill);
+		1 -> exit(PidZero, kill)
+	    end,
 	    receive
-		{Carry, Result} -> [{CarryOut, _} | _] = Result
+		{CarryIn, Result} -> Result 
 	    end
-	    %% Kill the other process
     end,
+    [{CarryOut, _}, _] = Result,
     PreviousPid ! {carry, CarryOut},
     ParentPid ! {N, Result}.
 
@@ -118,19 +122,22 @@ calculator(A, B, N, {Base, true, false}, ParentPid, PreviousPid) ->
 %% @doc Adds List1, List2 and the carry in C in base Base and messages
 %% the ParentPid process with the result.
 
--spec add_proc(ParentPid, List1, List2, Base, C) -> {C, List3} when
+-spec add_proc(ParentPid, List1, List2, Base, Carry, Sleep) -> {Carry, List3} when
       ParentPid :: pid(),
       N :: integer(),
+      Min :: integer(),
+      Max :: integer(),
       T :: {N, N},
-      C :: integer(),
+      Carry :: integer(),
       List1 :: [N],
       List2 :: [N],
       Base :: integer(),
-      List3 :: [T].
+      List3 :: [T],
+      Sleep :: false | {Min, Max}.
 
 
-add_proc(ParentPid, A, B, Base, Carry) ->
-    Result = add(A, B, Base, Carry),
+add_proc(ParentPid, A, B, Base, Carry, Sleep) ->
+    Result = add(A, B, Base, Carry, Sleep),
     ParentPid ! {Carry, Result}.
 
 
@@ -148,28 +155,48 @@ add_proc(ParentPid, A, B, Base, Carry) ->
 %% [{0,2},{0,4},{0,6},{0,9},{1,0}]'''
 %% </div>
 
--spec add(List1, List2, Base, C) -> List3 when
+-spec add(List1, List2, Base, C, Sleep) -> List3 when
       N :: integer(),
+      Min :: integer(),
+      Max :: integer(),
       T :: {N, N},
       C :: integer(),
       List1 :: [N],
       List2 :: [N],
       Base :: integer(),
-      List3 :: [T].
+      List3 :: [T],
+      Sleep :: false | {Min, Max}.
 
-add([A | []], [B | []], Base, C) when Base >= 1, A < Base, B < Base, C =< 1, C >= 0 ->
+
+add([A | []], [B | []], Base, C, Sleep) when Base >= 1, A < Base, B < Base, C =< 1, C >= 0 ->
+    case Sleep of
+	{Min, Max} -> timer:sleep(Min + random:uniform(Max - Min));
+	false -> ok
+    end,
     Sum = A + B + C,
     Quot = Sum div Base,
     Rem = Sum rem Base,
     [{Quot, Rem}];
 
-add([A | Left], [B | Right], Base, C) when Base >= 1, A < Base, B < Base ->
-    [{Carry, Result} | List] = add(Left, Right, Base, C),
+add([A | Left], [B | Right], Base, C, Sleep) when Base >= 1, A < Base, B < Base ->
+    case Sleep of
+	{Min, Max} -> timer:sleep(Min + random:uniform(Max - Min));
+	false -> ok
+    end,
+    [{Carry, Result} | List] = add(Left, Right, Base, C, Sleep),
     Sum = A + B + Carry,
     Quot = Sum div Base,
     Rem = Sum rem Base,
     [{Quot, Rem} | [{Carry, Result} | List]].
 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                          %%
+%%			   EUnit Test Cases                                 %%
+%%                                                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     
 
