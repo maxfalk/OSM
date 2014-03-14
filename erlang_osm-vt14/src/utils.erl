@@ -15,6 +15,8 @@
 -compile(export_all). 
 
 
+
+
 %% @doc Generates a list of lists of increasing sequences of integers
 %% starting with the empty list and ending with [1,2, ..., N].
 %% === Example ===
@@ -34,6 +36,8 @@ seqs(N) ->
     F = fun(X,[H|T]) -> [[X|H],H|T] end,
     lists:foldl(F, [[]], lists:seq(1,N)),
     lists:reverse([lists:reverse(L) || L <- lists:foldl(F, [[]], lists:seq(1,N))]).
+
+
 
 		
 %% @doc Each list in List2 contains the elements Elem in List1 for
@@ -78,6 +82,7 @@ filter_collect(N,R) ->
 
 
 
+
 lqr(L, N) ->
     Len = length(L),
 
@@ -88,7 +93,6 @@ lqr(L, N) ->
     R = Len rem N, 
     
     {Len, Q, R}. 
-
 
 
 
@@ -135,8 +139,6 @@ split_acc(Acc, List, 0) ->
     {lists:reverse(Acc), List};
 split_acc(Acc, [H|List], N) ->    
     split_acc([H|Acc], List, N-1).
-
-
 
 
 
@@ -201,6 +203,8 @@ pad_two(A, B, P) ->
 
 inner_list_length([]) -> 0;
 inner_list_length([{List,_}|_])-> length(List).
+
+
     
 
 %%@doc prints text representing the addition made.
@@ -216,6 +220,7 @@ inner_list_length([{List,_}|_])-> length(List).
       B :: integer(),
       Sum_carry_list :: result_list().
 	   
+
 print_text(A,B,Sum_carry_pos_list)->
     Sorted_list = sort(Sum_carry_pos_list),
     Outer_Length = length(Sorted_list),
@@ -233,6 +238,9 @@ print_text(A,B,Sum_carry_pos_list)->
     print_list(get_result(Sorted_list)).	    
     %% print the result
 
+
+
+
 %%@doc prints a line and a plus sign "+--------"
 %%
 %%
@@ -242,6 +250,8 @@ print_text(A,B,Sum_carry_pos_list)->
 print_plus_line(N)->
     io:format("+",[]),
     print_line(N-1).
+
+
 
 
 %%@doc sort a sum_carry_pos_list with quick sort, with
@@ -257,12 +267,18 @@ sort([{Result,Pivot}|T]) ->
     sort([{XResult,X} || {XResult,X} <- T, X =< Pivot]);
 sort([]) -> [].
 
+
+
+
 %%@doc prints all elements of a list, then prints a new line.
 -spec print_list(List::list())-> ok.
 
 print_list(List) ->
     [io:format("~c",[int_to_char(H)]) || H <- List],
     io:format("~n").
+
+
+
     
 %%@doc Prints a line "------" with n "-", then a newline.
 -spec print_line(N::integer())-> ok.
@@ -273,11 +289,14 @@ print_line(N) ->
     io:format("~n").
 
 
+
+
 %%@doc Prints the Number, then a newline.
 -spec print_number(Number::integer())-> ok.
+
+
 print_number(A)->
     print_number(A,0).
-
 
 print_number([],1)-> io:format("~n");
 print_number([0],0)->
@@ -292,6 +311,7 @@ print_number([H|T],_) ->
 
 
 
+
 %%@doc get carrys from our list 
 %%
 %%
@@ -303,7 +323,10 @@ get_carrys([])-> [];
 get_carrys([{List,_}|T])->
    [Carry || {Carry,_} <- List] ++ get_carrys(T).
 
-%%@doc get all the result numbers, aswell as the highest carry if it is one
+
+
+
+%%@doc get all the result numbers, as well as the highest carry if it is one
 %% as that carry will be needed in the result.
 -spec get_result(List)-> list() when
       List :: result_list().
@@ -318,6 +341,8 @@ get_result_help([]) -> [];
 get_result_help([{List,_}|T])->
    [Number || {_,Number} <- List] ++ get_result_help(T).
     
+
+
     
 %%@doc print N blank spaces.
 -spec print_blankspace(N)-> ok when
@@ -325,7 +350,10 @@ get_result_help([{List,_}|T])->
 
 print_blankspace(N) when N > 0->
     [io:format(" ") || _ <- lists:seq(1,N)];
-print_blankspace(N)-> ok.
+print_blankspace(_)-> ok.
+
+
+
 
 %%@doc add a new element with the highest position in a result_list,
 %% if the carry is 1 else just return the list unmodified.
@@ -340,6 +368,7 @@ add_carry_first(_,List) ->
 
 
 
+
 %%@doc add a new element with the highest position in a result_list.
 -spec add_first_element(Element,List) -> result_list() when
       Element :: tuple(),
@@ -347,12 +376,20 @@ add_carry_first(_,List) ->
 
 add_first_element(Element,List)->
     [{[Element],length(List)}| List].
+
+
     
 
-%%@doc convert a integer to a list of integers
+%%@doc convert an integer to a list of integers of base Base
 %%integer_to_intlist(A)->
  %%   B = [string:to_integer([X]) || X <- (integer_to_list(A))],
  %%   [Y || {Y,_} <- B].
+
+-spec integer_to_intlist(A, Base) -> List when
+      A :: integer(),
+      Base :: integer(),
+      List :: [integer()].
+
 
 integer_to_intlist(A,Base)->
     integer_to_intlist(A,Base,[]).
@@ -364,9 +401,24 @@ integer_to_intlist(A,Base,Acc)->
     integer_to_intlist(Kvot,Base,[Rest|Acc]).
 
 
+
+
+%%@doc Converts an integer to a corresponding character. For example, the 
+%% integer 5 converts to the character $5 = 53 and 15 converts to the character $F = 70.
+%% integers from ten and up will convert from the letter A and up following the ASCII table.
 %%
-%%
-%%
+%% === Example ===
+%% <div class="example">```
+%% 1> utils:int_to_char(5).
+%% 53
+%% 2> utils:int_to_char(15).
+%% 70'''
+%% </div>
+
+-spec int_to_char(N) -> C when
+      N :: integer(),
+      C :: char().
+
 int_to_char(N) ->
     if
 	N < 10 -> N + 48;
@@ -384,12 +436,21 @@ int_to_char(N) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+int_to_char_test() ->
+    ?assert(int_to_char(0) =:= $0),
+    ?assert(int_to_char(9) =:= $9),
+    ?assert(int_to_char(10) =:= $A),
+    ?assert(int_to_char(15) =:= $F).
+
+
 integer_to_intlist_test()->
     ?assert(integer_to_intlist(123,10) =:= [1,2,3]).
+
 
 add_carry_first_test()->
     ?assert(add_carry_first({1,0},[{[{1,2}],0}]) =:= [{[{1,2}],0}]),
     ?assert(add_carry_first({0,1},[{[{1,2}],0}]) =:= [{[{0,1}],1},{[{1,2}],0}]).
+
 
 add_first_element_test()->
     ?assert(add_first_element({1,1},[{[{1,2}],0}]) =:= [{[{1,1}],1},{[{1,2}],0}]),
@@ -406,7 +467,8 @@ get_carrys_test()->
 
 %%Just check that it doesn't crash, tests all print functions
 print_text_test()->
-    print_text(10,10,[{[{0,2}],1},{[{0,2}],1}]),
+    print_text(10,10,
+	       [{[{0,2}],1},{[{0,2}],1}]),
     print_text(12345,12345,
 	       [{[{0,4}],3},{[{0,2}],4},{[{0,9}],1},{[{0,6}],2},{[{1,0}],0}]).
 
@@ -415,15 +477,18 @@ sort_test()->
     ?assert(sort([{[{0,0}],1},{[{0,1}],0},{[{0,1}],6}]) =:= 
 	   [{[{0,1}],6},{[{0,0}],1},{[{0,1}],0}]).
     
+
 inner_list_lengt_test()->
     ?assert(inner_list_length([{[{0,0},{0,0},{0,0}],1},{[{0,7}],0}]) =:= 3),
     ?assert(inner_list_length([{[{0,7}],0}]) =:= 1).
+
 
 seqs_length_test_() ->
     %% The list [[], [1], [1,2], ..., [1,2, ..., N]] will allways have
     %% length N+1.
 
     [?_assertEqual(N+1, length(seqs(N))) || N <- lists:seq(1, 55)].
+
 
 seqs_test_() ->
     %% A small collection of expected results {N, seqs(N)}.
@@ -441,9 +506,11 @@ seqs_test_() ->
     
     [?_assertEqual(L, seqs(N)) || {N, L} <- Data].
     
+
 filter_test_() ->
     [?_assertEqual([], filter([], L)) || L <- seqs(10)].
     
+
 filter_true_false_test_() ->
     P1 = fun(_) -> false end,
     P2 = fun(_) -> true end,
@@ -452,7 +519,8 @@ filter_true_false_test_() ->
     Expected = fun(L) -> [lists:filter(P,L) || P <- [P1,P2,P3]] end,
 
     [?_assertEqual(Expected(L), filter([P1,P2,P3], L) ) || L <- seqs(10) ].
-				       
+	
+			       
 filter_test() ->
     L = lists:seq(1,10),
 
@@ -465,12 +533,14 @@ filter_test() ->
     
     ?assertEqual(E, filter([P1,P2,P3], L)).
     
+
 split_concat_test_() ->
     %% Make sure the result of concatenating the sublists equals the
     %% original list.
     
     L = lists:seq(1,99),
     [?_assertEqual(L, lists:concat(split(L,N))) || N <- lists:seq(1,133)].
+
 
 split_n_test_() ->
     %% Make sure the correct number of sublists are generated. 
@@ -498,11 +568,13 @@ expected_stat(L, N) when N =< length(L) ->
     
     {{R, Q+1}, {N-R, Q}};
 
+
 expected_stat(L, _N) ->
     %% N greater than the length of L, hence all sublists will have
     %% length 1.
 
     {{length(L), 1}, {0,0}}.
+
 
 stat(N, M, LL) ->
     %% Return a tuple {{Num_N, N}, {Num_M, M}} where Num_N is the
@@ -514,6 +586,7 @@ stat(N, M, LL) ->
     [Num_N, Num_M] = [length(L) || L <- S],
     
     {{Num_N, N}, {Num_M, M}}.
+
 
 split_stat_test_() ->
     %% Assure the list of sublists contains the correct number of
@@ -529,15 +602,13 @@ split_stat_test_() ->
     
     [Assert(L,N) ||  L <- seqs(33), N <- lists:seq(1,length(L)+5)].
     
+
 %% Assure that we add N numbers of padding elements to the beginning of a list
 %% A new list with the elements added.
 pad_test()->
     ?assert(pad([0,1,2], 2, 5) =:= [5,5,0,1,2]),
     ?assert(pad([4,5,6], 0, 3) =:= [4,5,6]),
     ?assert(pad([1,2,3], -3, 1) =:= [1,2,3]).
-
-
-
 
 pad_two_test() ->
     ?assert(pad_two([1,2,3], [1,2,3], 0) =:= {[1,2,3], [1,2,3]}),
