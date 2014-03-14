@@ -1,7 +1,7 @@
 
 -module(calc). 
 
--export([start/4]).
+-export([start_calc/4]).
 
 %% To use EUnit we must include this.
 -include_lib("eunit/include/eunit.hrl").
@@ -19,10 +19,10 @@
 %% where N is its sublist number and Result is the sum of the addition 
 %% including carry bits.
 
--spec start(ParentPid, A, B, Options) -> ok when
+-spec start_calc(ParentPid, LeftSplit, RightSplit, Options) -> integer() when
       ParentPid :: pid(),
-      A :: integer(),
-      B :: integer(),
+      LeftSplit :: list(),
+      RightSplit :: list(),
       Min :: integer(),
       Max :: integer(),
       Base :: integer(),
@@ -32,9 +32,7 @@
       Options :: {Base, Split, Spawn, Sleep}.
 
 
-start(ParentPid, A, B, {Base, Split, Spawn, Sleep}) ->
-    {Left, Right} = utils:pad_two(integer_to_list(A), integer_to_list(B), 0),
-    {LeftSplit, RightSplit} = {utils:split(Left, Split), utils:split(Right, Split)},
+start_calc(ParentPid, LeftSplit, RightSplit, {Base, Split, Spawn, Sleep}) ->
     spawn_calculators(LeftSplit, RightSplit, Split, {Base, Spawn, Sleep}, ParentPid).
 
 
@@ -47,7 +45,7 @@ start(ParentPid, A, B, {Base, Split, Spawn, Sleep}) ->
 %% where N is its sublist number and Result is the sum of the addition 
 %% including carry bits.
 
--spec spawn_calculators(Left, Right, N, Options, ParentPid) -> ok when
+-spec spawn_calculators(Left, Right, N, Options, ParentPid) -> pid() when
       Left :: integer(),
       Right :: integer(),
       N :: integer(),

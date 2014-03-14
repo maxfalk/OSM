@@ -6,7 +6,8 @@
 -module(utils). 
 
 -export([seqs/1, filter/2, split/2, pad/3, pad_two/3, print_text/3, get_result/1]).
-
+-export_type([result_list/0]).
+-opaque result_list() :: [{[{integer(),integer()}, ...],integer()}, ...]. 
 
 %% To use EUnit we must include this.
 -include_lib("eunit/include/eunit.hrl").
@@ -155,7 +156,7 @@ split_acc(Acc, [H|List], N) ->
       P :: term(),
       List2 :: list().
 
-pad(List, 0, _) ->
+pad(List, N, _) when N =< 0 ->
     List;
 pad(List, N, P) when N > 0 ->
     pad([P|List], N-1, P).
@@ -185,33 +186,35 @@ pad_two(A, B, P) ->
     LenB = length(B),
     Pad = LenA - LenB,
     if
-	Pad < 0 -> NewA = pad_two(A, -Pad, P), {NewA, B}; 
-	Pad > 0 -> {A, pad_two(B, Pad, P)};
+	Pad < 0 -> NewA = pad(A, -Pad, P), {NewA, B}; 
+	Pad > 0 -> {A, pad(B, Pad, P)};
 	Pad =:= 0 -> {A, B}
     end.
 	    
 
 
 
-%%@doc get inner list length
-%%
-%%
-%%
+%%@doc get inner list length of a list 
+%%[{List,_}|_] a list containing tuples with the first element as a list. 
 -spec inner_list_length(List) -> integer() when
-      List :: list().
+      List :: result_list().
 
 inner_list_length([]) -> 0;
 inner_list_length([{List,_}|_])-> length(List).
     
 
-%%@doc prints text representing the addition made
-%%
-%%
-%%
+%%@doc prints text representing the addition made.
+%%Example
+%%        00 
+%%   -------
+%%        12
+%%        13
+%%  +-------
+%%        25
 -spec print_text(A,B,Sum_carry_list)-> ok when
       A :: integer(),
       B :: integer(),
-      Sum_carry_list :: list().
+      Sum_carry_list :: result_list().
 	   
 print_text(_,_,[])-> ok;
 print_text(A,B,Sum_carry_pos_list)->
@@ -246,7 +249,7 @@ print_plus_line(N)->
 %%
 %%
 -spec sort(List) -> list() when
-      List :: list().
+      List :: result_list().
 
 sort([{Result,Pivot}|T]) ->
     sort([{XResult,X} || {XResult,X} <- T, X > Pivot]) ++
@@ -255,9 +258,6 @@ sort([{Result,Pivot}|T]) ->
 sort([]) -> [].
 
 %%@doc prints all elements of a list, then prints a new line.
-%%
-%%
-%%
 -spec print_list(List::list())-> ok.
 
 print_list(List) when length(List) > 0 ->
@@ -265,9 +265,6 @@ print_list(List) when length(List) > 0 ->
     io:format("~n").
     
 %%@doc Prints a line "------" with n "-", then a newline.
-%%
-%%
-%%
 -spec print_line(N::integer())-> ok.
 
 
@@ -275,10 +272,8 @@ print_line(N) when N >=0 ->
     [io:format("-") || _ <- lists:seq(0,N)],
     io:format("~n");
 print_line(_) -> ok.
+
 %%@doc Prints the Number, then a newline.
-%%
-%%
-%%
 -spec print_number(Number::integer())-> ok.
 
 print_number(Number)->
@@ -288,14 +283,18 @@ print_number(Number)->
 %%
 %%
 %%
+-spec get_carrys(List)-> list() when
+      List :: result_list().
+
 get_carrys([])-> [];
 get_carrys([{List,_}|T])->
    [Carry || {Carry,_} <- List] ++ get_carrys(T).
 
-%%@doc get all the result numbers
-%%
-%%
-%%
+%%@doc get all the result numbers, aswell as the highest carry if it is one
+%% as that carry will be needed in the result.
+-spec get_result(List)-> list() when
+      List :: result_list().
+
 get_result([]) -> [];
 get_result([{[{Carry,_}],_}|_] = List) when Carry =:= 1->
     [Carry|get_result_help(List)];
@@ -307,13 +306,34 @@ get_result_help([{List,_}|T])->
    [Number || {_,Number} <- List] ++ get_result_help(T).
     
     
-%%@doc print a blank space.
-%%
-%%
-%%
+%%@doc print N blank spaces.
+-spec print_blankspace(N)-> ok when
+      N :: integer().
 
 print_blankspace(N)->
     [io:format(" ") || _ <- lists:seq(1,N)].
+
+%%@doc add a new element with the highest position in a result_list,
+%% if the carry is 1 else just return the list unmodified.
+-spec add_carry_first(Element,List) -> result_list() when
+      Element :: tuple(),
+      List :: result_list().
+
+add_carry_first({0,1} = Element, List) ->
+    add_first_element(Element,List);
+add_carry_first(_,List) ->
+    List.
+
+
+
+%%@doc add a new element with the highest position in a result_list.
+-spec add_first_element(Element,List) -> result_list() when
+      Element :: tuple(),
+      List :: result_list().
+
+add_first_element(Element,List)->
+    [{[Element],length(List)}| List].
+    
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -321,6 +341,16 @@ print_blankspace(N)->
 %%			   EUnit Test Cases                                 %%
 %%                                                                          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+add_carry_first_test()->
+    ?assert(add_carry_first({1,0},[{[{1,2}],0}]) =:= [{[{1,2}],0}]),
+    ?assert(add_carry_first({0,1},[{[{1,2}],0}]) =:= [{[{0,1}],1},{[{1,2}],0}]).
+
+add_first_element_test()->
+    ?assert(add_first_element({1,1},[{[{1,2}],0}]) =:= [{[{1,1}],1},{[{1,2}],0}]),
+    ?assert(add_first_element({0,1},[{[{1,2}],0}]) =:= [{[{0,1}],1},{[{1,2}],0}]).
+    
 
 get_result_test()->
     ?assert(get_result([{[{1,2}],0}]) =:= [1,2]),
@@ -455,3 +485,17 @@ split_stat_test_() ->
     
     [Assert(L,N) ||  L <- seqs(33), N <- lists:seq(1,length(L)+5)].
     
+%% Assure that we add N numbers of padding elements to the beginning of a list
+%% A new list with the elements added.
+pad_test()->
+    ?assert(pad([0,1,2], 2, 5) =:= [5,5,0,1,2]),
+    ?assert(pad([4,5,6], 0, 3) =:= [4,5,6]),
+    ?assert(pad([1,2,3], -3, 1) =:= [1,2,3]).
+
+
+
+
+pad_two_test() ->
+    ?assert(pad_two([1,2,3], [1,2,3], 0) =:= {[1,2,3], [1,2,3]}),
+    ?assert(pad_two([1,2,3], [1], 0) =:= {[1,2,3], [0,0,1]}),
+    ?assert(pad_two([1,2,3], [1,2,3,4,5], 0) =:= {[0,0,1,2,3], [1,2,3,4,5]}). 
