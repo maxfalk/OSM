@@ -6,9 +6,11 @@
 -import(calc,[start_calc/4]).
 %% To use EUnit we must include this.
 -include_lib("eunit/include/eunit.hrl").
+-export_type([result_list/0]).
+-opaque result_list() :: [{[{integer(),integer()}, ...],integer()}, ...]. 
 
 
-%% @doc Creates a new process and returns pid frm the created process.
+%%@doc Adds A and B with the base Base, returns result and prints the calculation to the screen
 -spec start(A,B,Base) -> ok when 
       A::integer(),
       B::integer(), 
@@ -24,10 +26,7 @@ start(A, B, Base) ->
    
 
 
-%% @doc
-%%
-%%
-%%
+%% @doc Start the addition with options
 -spec start(A,B,Base, Options) -> ok when 
       A::integer(),
       B::integer(), 
@@ -74,7 +73,6 @@ receive_result()->
 
 
 %%@doc Handels partial results, waits for every process to finish and adds them up to one result.
-%%Base: the base for the possible carry in.
 -spec result(A,B,Num_proc,Result_to_pid) -> integer() when
       A :: integer(),
       B :: integer(),
@@ -84,14 +82,13 @@ receive_result()->
 result(A,B,Num_proc,Result_to_pid)->
     result_handler(A,B,[],Num_proc,Result_to_pid).
 
-%%@doc Waits to receive results and a possible carry. 
-%% Terminates after some process has asked for the result.
+%%@doc Waits to receive results from all the spwaned processes, then 
+%%sends back the result and prints the calculations to the screen.
 %%
-%%[{[{Carry,Result},...], pos}, ..]
 -spec result_handler(A,B,Sum_carry_pos_list,Num_processes,Result_to_pid) -> integer() when
       A :: integer(),
       B :: integer(),
-      Sum_carry_pos_list :: list(),
+      Sum_carry_pos_list :: result_list(),
       Num_processes :: integer(),
       Result_to_pid :: pid().
 
@@ -114,12 +111,10 @@ result_handler(A,B,Sum_carry_pos_list,Num_processes,Result_to_pid)->
     end.
 
     
-%%@doc converts a string (list) of numbers to an integer 
-%%
-%%
-%%
+%%@doc converts a string (list) of numbers to an integer of those numbers 
 -spec convert_list_to_integer(List)-> integer() when
       List :: list().
+
 convert_list_to_integer(List)-> 
     convert_list_to_integer(List,length(List)-1,0).
 
@@ -169,3 +164,16 @@ result_incarry_test()->
 	    
     end,
     ?assert(Got_result =:= 16).
+
+start_test()->
+    ?assert(start(10,10,10) =:= 20),
+    ?assert(start(10,2,10) =:= 12),
+    ?assert(start(10,10,2) =:= 100),
+    ?assert(start(7,7,8) =:= 16).
+
+start_options_test()->
+    ?assert(start(10,10,10,[{spawn,true}]) =:= 20),
+    ?assert(start(10,2,10,[{sleep,{5,20}}]) =:= 12),
+    ?assert(start(10,10,2,[{split,4}]) =:= 100),
+    ?assert(start(7,7,8,[{split,4},{sleep,{5,20}},{spawn,true}]) =:= 16).
+    

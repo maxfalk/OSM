@@ -6,6 +6,10 @@
 %% To use EUnit we must include this.
 -include_lib("eunit/include/eunit.hrl").
 
+-export_type([result_list/0]).
+-opaque result_list() :: [{[{integer(),integer()}, ...],integer()}, ...]. 
+
+
 -compile(export_all). 
 
 %% CALC
