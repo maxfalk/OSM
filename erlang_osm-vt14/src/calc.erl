@@ -21,12 +21,14 @@
 %%
 %% Each subprocess will message the ParentPid process with {N, Result},
 %% where N is its sublist number and Result is the sum of the addition 
-%% including carry bits.
+%% including carry bits, and the tuple {carry, Carry} where Carry is the
+%% highest order carry out of the addition.
 
--spec start_calc(ParentPid, LeftSplit, RightSplit, Options) -> integer() when
+
+-spec start_calc(ParentPid, LeftSplit, RightSplit, Options) -> ok when
       ParentPid :: pid(),
-      LeftSplit :: list(),
-      RightSplit :: list(),
+      LeftSplit :: [[integer()]],
+      RightSplit :: [[integer()]],
       Min :: integer(),
       Max :: integer(),
       Base :: integer(),
@@ -47,7 +49,8 @@ start_calc(ParentPid, LeftSplit, RightSplit, {Base, Split, Spawn, Sleep}) ->
 %%
 %% Each subprocess will message the ParentPid process with {N, Result},
 %% where N is its sublist number and Result is the sum of the addition 
-%% including carry bits.
+%% including carry bits, and the tuple {carry, Carry} where Carry is the
+%% highest order carry out of the last addition process to finish. 
 
 
 -spec spawn_calculators(Left, Right, N, Options, ParentPid) -> ok when
@@ -64,7 +67,8 @@ start_calc(ParentPid, LeftSplit, RightSplit, {Base, Split, Spawn, Sleep}) ->
 
 
 spawn_calculators(Left, Right, N, Options, ParentPid) when N =:= length(Left) ->
-    spawn_calculators_rec(Left, Right, N-1, Options, ParentPid, ParentPid).
+    spawn_calculators_rec(Left, Right, N-1, Options, ParentPid, ParentPid),
+    ok.
     
 spawn_calculators_rec([A|[]], [B|[]], 0, Options, ParentPid, PreviousPid) -> 
     PidNew = spawn(?MODULE, calculator, [A, B, 0, Options, ParentPid, PreviousPid]),
@@ -101,7 +105,8 @@ calculator(A, B, N, {Base, false, Sleep}, ParentPid, PreviousPid) ->
     end,
     [{CarryOut, _} | _] = Result,
     PreviousPid ! {carry, CarryOut}, 
-    ParentPid ! {result, {Result, N}};
+    ParentPid ! {result, {Result, N}},
+    ok;
 
 calculator(A, B, N, {Base, true, Sleep}, ParentPid, PreviousPid) ->
     PidZero = spawn(?MODULE, add_proc, [self(), A, B, Base, 0, Sleep]),
@@ -118,7 +123,8 @@ calculator(A, B, N, {Base, true, Sleep}, ParentPid, PreviousPid) ->
 	    end
     end,
     PreviousPid ! {carry, CarryOut},
-    ParentPid ! {result, {Result, N}}.
+    ParentPid ! {result, {Result, N}},
+    ok.
 
 
 
@@ -249,8 +255,7 @@ spawn_calculators_test() ->
     Pid = self(),
     spawn_calculators(A, B, 3, {10, false, false}, Pid),
     receive
-	{carry, Carry1} -> ?assert(Carry1 =:= 1),
-			   io:format("hello")
+	{carry, Carry1} -> ?assert(Carry1 =:= 1)
     end,
     receive
 	{result, {Result1, 0}} ->  ?assert(Result1 =:= [{1,1},{1,1},{1,0}]) 
@@ -260,5 +265,34 @@ spawn_calculators_test() ->
     end,
     receive
 	{result, {Result3, 2}} ->  ?assert(Result3 =:= [{1,1},{1,1},{1,1}]) 
+    end,
+    spawn_calculators(A, B, 3, {10, true, {100, 1000}}, Pid),
+    receive
+	{carry, Carry2} -> ?assert(Carry2 =:= 1)
+    end,
+    receive
+	{result, {Result12, 0}} ->  ?assert(Result12 =:= [{1,1},{1,1},{1,0}]) 
+    end,
+    receive
+	{result, {Result22, 1}} ->  ?assert(Result22 =:= [{1,1},{1,1},{1,1}]) 
+    end,
+    receive
+	{result, {Result32, 2}} ->  ?assert(Result32 =:= [{1,1},{1,1},{1,1}]) 
     end.
     
+
+start_calc_test() ->
+    Pid = self(),
+    start_calc(Pid, [[1],[1],[1]], [[1],[0],[1]], {2, 3, true, {100, 1000}}),
+    receive
+	{carry, Carry} -> ?assert(Carry =:= 1)
+    end,
+    receive
+	{result, {Result1, 0}} -> ?assert(Result1 =:= [{1,0}])
+    end,
+    receive
+	{result, {Result2, 1}} -> ?assert(Result2 =:= [{1,0}])
+    end,
+    receive
+	{result, {Result3, 2}} -> ?assert(Result3 =:= [{1,1}])
+    end.
