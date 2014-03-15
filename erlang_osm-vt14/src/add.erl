@@ -10,7 +10,8 @@
 -opaque result_list() :: [{[{integer(),integer()}, ...],integer()}, ...]. 
 
 
-%%@doc Adds A and B with the base Base, returns result and prints the calculation to the screen
+%%@doc Adds A and B with the base Base, returns result and prints the calculation to the screen.
+%%Pads A and B to the same size, splits them to partial lists that will be added.
 -spec start(A,B,Base) -> ok when 
       A::integer(),
       B::integer(), 
@@ -26,7 +27,7 @@ start(A, B, Base) ->
    
 
 
-%% @doc Start the addition with options
+%% @doc Start the addition with options, other wise same as the start function above.
 -spec start(A,B,Base, Options) -> ok when 
       A::integer(),
       B::integer(), 
@@ -35,36 +36,42 @@ start(A, B, Base) ->
       Options::[Option].
 
 start(A,B,Base,Options) ->
-    {Spawn,Sleep,Split} = get_options(Options),
     {Left, Right} = utils:pad_two(integer_to_intlist(A,Base), integer_to_intlist(B,Base), 0),    
+    {Spawn,Sleep,Split} = get_options(Options,length(Left)),                                      
     {LeftSplit, RightSplit} = {utils:split(Left, Split), utils:split(Right, Split)},
     Result_pid = spawn(?MODULE,result,[Left,Right,Base,Split,self()]),
     _First_spawn_pid = calc:start_calc(Result_pid,LeftSplit,RightSplit,{Base,Split,Spawn,Sleep}),
     receive_result().
       
 
-%%@doc get options from option list.
--spec get_options(List) -> tuple() when
-      List :: list().
+%%@doc get options from option list, with max split <= Max_size
+-spec get_options(List,Max_size) -> {atom(),{integer(),integer()},integer()} when
+      List :: list(),
+      Max_size :: integer().
 
-get_options(List)-> get_options_help(List,false,false,1).
+get_options(List,Max_size)-> get_options_help(List,Max_size,false,false,1).
 
-get_options_help([],Spawn,Sleep,Split)-> {Spawn,Sleep,Split};
-get_options_help([Option|T],Spawn,Sleep,Split)->
+get_options_help([],_,Spawn,Sleep,Split)-> {Spawn,Sleep,Split};
+get_options_help([Option|T],Max_size,Spawn,Sleep,Split)->
     case Option of
 	{sleep,Sleep_value}->
-	    get_options_help(T,Spawn,Sleep_value,Split);
+	    get_options_help(T,Max_size,Spawn,Sleep_value,Split);
 	{spawn,Spawn_value}->
-	    get_options_help(T,Spawn_value,Sleep,Split);
+	    get_options_help(T,Max_size,Spawn_value,Sleep,Split);
 	{split,Split_value} ->
-	    get_options_help(T,Spawn,Sleep,Split_value);
+            Split_conf = (if
+                              Split_value > Max_size -> Max_size;
+                              Split_value =< Max_size -> Split_value
+                          end),
+	    get_options_help(T,Max_size,Spawn,Sleep,Split_conf);
 	true ->
-	    io:format("felfelfelfelf")
+	    io:format("Error: parsing options")
     end.
     
 
 %%@doc waits to receive the result of the addition
 -spec receive_result()-> integer().
+
 receive_result()->
     receive
 	Result ->
@@ -72,10 +79,11 @@ receive_result()->
     end.
 
 
-%%@doc Handels partial results, waits for every process to finish and adds them up to one result.
+%%@doc Handels partial results, waits for every process to finish and adds them up to one result,
+%% sends the result to Result_to_pid, prints a text representasion of how the addition was made.
 -spec result(A,B,Base,Num_proc,Result_to_pid) -> integer() when
-      A :: integer(),
-      B :: integer(),
+      A :: list(),
+      B :: list(),
       Base :: integer(),
       Num_proc :: integer(),
       Result_to_pid :: pid().
@@ -83,12 +91,12 @@ receive_result()->
 result(A,B,Base,Num_proc,Result_to_pid)->
     result_handler(A,B,Base,[],Num_proc,Result_to_pid).
 
-%%@doc Waits to receive results from all the spwaned processes, then 
+%%@doc Waits to receive results from all the spawned processes, then 
 %%sends back the result and prints the calculations to the screen.
 %%
 -spec result_handler(A,B,Base,Sum_carry_pos_list,Num_processes,Result_to_pid) -> integer() when
-      A :: integer(),
-      B :: integer(),
+      A :: list(),
+      B :: list(),
       Base :: integer(),
       Sum_carry_pos_list :: result_list(),
       Num_processes :: integer(),
@@ -98,10 +106,10 @@ result(A,B,Base,Num_proc,Result_to_pid)->
 
 result_handler(A,B,Base,Sum_carry_pos_list,0,Result_to_pid)->
     receive
-	{carry,_Carry_in} ->
-	    %%Carry_added_result_list = add_carry_first({0,Carry_in},Sum_carry_pos_list),
-	    Result_list = utils:get_result(Sum_carry_pos_list),
-	    utils:print_text(A,B,Sum_carry_pos_list),
+	{carry,Carry_in} ->
+	    Carry_added_result_list = add_carry_first({0,Carry_in},Sum_carry_pos_list),
+	    Result_list = utils:get_result(Carry_added_result_list),
+	    utils:print_text(A,B,Carry_added_result_list),
 	    Result_to_pid ! convert_list_to_integer(Result_list,Base)
     end;
 result_handler(A,B,Base,Sum_carry_pos_list,Num_processes,Result_to_pid)->
@@ -130,16 +138,12 @@ convert_list_to_integer([H|T],Mult,Acc,Base)->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%start_test() ->
-   %% ?assertMatch(true, Result_pid(start(10,10,10))).
-
-
 convert_list_to_integer_test()->
     ?assert(convert_list_to_integer([1,2,3,4,5,6],10) =:= 123456).
     
 %%Test that the result call will give the right vaule
 result_nocarry_test()->
-    Pid = spawn(?MODULE,result,[2,1,1,self()]),
+    Pid = spawn(?MODULE,result,[[2],[1],10,1,self()]),
     Pid ! {result,{[{0,3}],0}},
     Pid ! {carry,0},
     receive
@@ -149,9 +153,9 @@ result_nocarry_test()->
     ?assert(Got_result =:= 3).
 
 result_carry_test()->
-    Pid = spawn(?MODULE,result,[8,8,1,self()]),
+    Pid = spawn(?MODULE,result,[[8],[8],10,1,self()]),
     Pid ! {result,{[{1,6}],0}},
-    Pid ! {carry,0},
+    Pid ! {carry,1},
     receive
 	Result -> Got_result = Result
 	    
@@ -159,7 +163,7 @@ result_carry_test()->
     ?assert(Got_result =:= 16).
 
 result_incarry_test()->
-    Pid = spawn(?MODULE,result,[8,8,1,self()]),
+    Pid = spawn(?MODULE,result,[[8],[8],10,1,self()]),
     Pid ! {result,{[{1,6}],0}},
     Pid ! {carry,1},
     receive
@@ -171,12 +175,12 @@ result_incarry_test()->
 start_test()->
     ?assert(start(10,10,10) =:= 20),
     ?assert(start(10,2,10) =:= 12),
-    ?assert(start(10,10,2) =:= 100),
-    ?assert(start(7,7,8) =:= 16).
+    ?assert(start(10,10,2) =:= 20),
+    ?assert(start(7,7,8) =:= 14).
 
 start_options_test()->
     ?assert(start(10,10,10,[{spawn,true}]) =:= 20),
     ?assert(start(10,2,10,[{sleep,{5,20}}]) =:= 12),
-    ?assert(start(10,10,2,[{split,4}]) =:= 100),
-    ?assert(start(7,7,8,[{split,4},{sleep,{5,20}},{spawn,true}]) =:= 16).
+    ?assert(start(10,10,2,[{split,3}]) =:= 20),
+    ?assert(start(7,7,8,[{split,4},{sleep,{5,20}},{spawn,true}]) =:= 14).
     

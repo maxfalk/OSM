@@ -1,12 +1,13 @@
 %% @author Karl Marklund <karl.marklund@it.uu.se>
-
 %% @doc A small collection of utility functions. 
 
 
 -module(utils). 
 
 -export([seqs/1, filter/2, split/2, pad/3, pad_two/3, print_text/3, get_result/1]).
+
 -export_type([result_list/0]).
+%%@type Type containing how the addition of our numbers were made.
 -opaque result_list() :: [{[{integer(),integer()}, ...],integer()}, ...]. 
 
 %% To use EUnit we must include this.
@@ -216,8 +217,8 @@ inner_list_length([{List,_}|_])-> length(List).
 %%  +-------
 %%        25
 -spec print_text(A,B,Sum_carry_list)-> ok when
-      A :: integer(),
-      B :: integer(),
+      A :: list(),
+      B :: list(),
       Sum_carry_list :: result_list().
 	   
 
@@ -226,26 +227,26 @@ print_text(A,B,Sum_carry_pos_list)->
     Outer_Length = length(Sorted_list),
     Inner_length = inner_list_length(Sorted_list),
     Length = Inner_length*Outer_Length,
-    print_list(get_carrys(Sorted_list)), %%print carrys in right order
+    Carry_list = get_carrys(Sorted_list),
+    Result_list = get_result(Sorted_list),
+    %% print the result
+    print_blankspace((length(A)+1)- length(Carry_list)), %%Make sure we print on the same row.
+    print_number(Carry_list), %%print carrys in right order, skip first carry will alwats be 0
     print_line(Length), %% print line of right length
-    print_blankspace(1),
+    print_blankspace(2),
     print_number(A), %% print Number A in right order
-    print_blankspace(1),
+    print_blankspace(2),
     print_number(B), %% print Number B in right order
     print_plus_line(Length), %% print line with + sign in the front
-    {[{Carry,_}|_],_} = hd(Sum_carry_pos_list),
-    print_blankspace(1 - Carry),
-    print_list(get_result(Sorted_list)).	    
-    %% print the result
-
-
-
+    print_blankspace((length(A)+2)- length(Result_list)),
+    print_list(Result_list).	    
 
 %%@doc prints a line and a plus sign "+--------"
 %%
 %%
 %%
--spec print_plus_line(N::integer())-> ok.
+-spec print_plus_line(N)-> ok when
+      N :: integer().
 
 print_plus_line(N)->
     io:format("+",[]),
@@ -257,8 +258,7 @@ print_plus_line(N)->
 %%@doc sort a sum_carry_pos_list with quick sort, with
 %%biggest part first.
 %%
-%%
--spec sort(List) -> list() when
+-spec sort(List) -> result_list() when
       List :: result_list().
 
 sort([{Result,Pivot}|T]) ->
@@ -270,18 +270,20 @@ sort([]) -> [].
 
 
 
-%%@doc prints all elements of a list, then prints a new line.
--spec print_list(List::list())-> ok.
+%%@doc prints all elements of a list, 
+%% converts numbers > 9 to letters, then prints a new line.
+-spec print_list(List)-> ok when
+      List :: list().
 
 print_list(List) ->
     [io:format("~c",[int_to_char(H)]) || H <- List],
     io:format("~n").
 
 
-
     
 %%@doc Prints a line "------" with n "-", then a newline.
--spec print_line(N::integer())-> ok.
+-spec print_line(N)-> ok when
+      N :: integer().
 
 
 print_line(N) ->
@@ -291,9 +293,10 @@ print_line(N) ->
 
 
 
-%%@doc Prints the Number, then a newline.
--spec print_number(Number::integer())-> ok.
-
+%%@doc Prints the list A without starting zeros. Converts the numbers in A
+%% to a letter if > 9, and prints a newline.
+-spec print_number(A)-> ok when
+      A :: list().
 
 print_number(A)->
     print_number(A,0).
@@ -312,10 +315,7 @@ print_number([H|T],_) ->
 
 
 
-%%@doc get carrys from our list 
-%%
-%%
-%%
+%%@doc Get all the carrys from the given result_list
 -spec get_carrys(List)-> list() when
       List :: result_list().
 
@@ -326,24 +326,17 @@ get_carrys([{List,_}|T])->
 
 
 
-%%@doc get all the result numbers, as well as the highest carry if it is one
+%%@doc get all the result numbers, as well as the highest carry if it is  equal to one
 %% as that carry will be needed in the result.
 -spec get_result(List)-> list() when
       List :: result_list().
 
 get_result([]) -> [];
-get_result([{[{Carry,_}],_}|_] = List) when Carry =:= 1->
-    [Carry|get_result_help(List)];
-get_result(List) ->
-    get_result_help(List).
-
-get_result_help([]) -> [];
-get_result_help([{List,_}|T])->
-   [Number || {_,Number} <- List] ++ get_result_help(T).
+get_result([{List,_}|T])->
+   [Number || {_,Number} <- List] ++ get_result(T).
     
 
-
-    
+   
 %%@doc print N blank spaces.
 -spec print_blankspace(N)-> ok when
       N :: integer().
@@ -351,8 +344,6 @@ get_result_help([{List,_}|T])->
 print_blankspace(N) when N > 0->
     [io:format(" ") || _ <- lists:seq(1,N)];
 print_blankspace(_)-> ok.
-
-
 
 
 %%@doc add a new element with the highest position in a result_list,
@@ -381,15 +372,10 @@ add_first_element(Element,List)->
     
 
 %%@doc convert an integer to a list of integers of base Base
-%%integer_to_intlist(A)->
- %%   B = [string:to_integer([X]) || X <- (integer_to_list(A))],
- %%   [Y || {Y,_} <- B].
-
 -spec integer_to_intlist(A, Base) -> List when
       A :: integer(),
       Base :: integer(),
       List :: [integer()].
-
 
 integer_to_intlist(A,Base)->
     integer_to_intlist(A,Base,[]).
@@ -458,7 +444,7 @@ add_first_element_test()->
     
 
 get_result_test()->
-    ?assert(get_result([{[{1,2}],0}]) =:= [1,2]),
+    ?assert(get_result([{[{1,2}],0}]) =:= [2]),
     ?assert(get_result([{[{0,0},{1,1}],1},{[{0,1},{1,0}],1}]) =:=[0,1,1,0]).
 
 get_carrys_test()->
@@ -467,9 +453,9 @@ get_carrys_test()->
 
 %%Just check that it doesn't crash, tests all print functions
 print_text_test()->
-    print_text(10,10,
+    print_text([1,0],[1,0],
 	       [{[{0,2}],1},{[{0,2}],1}]),
-    print_text(12345,12345,
+    print_text([1,2,3,4,5],[1,2,3,4,5],
 	       [{[{0,4}],3},{[{0,2}],4},{[{0,9}],1},{[{0,6}],2},{[{1,0}],0}]).
 
 
