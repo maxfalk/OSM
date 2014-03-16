@@ -7,8 +7,9 @@
 
 %% @doc Find the max value in a list using a sequential, recursive
 %% solution.
--spec max(List) -> integer() when List::list();
-         ([]) -> {undefined::atom(),empty_list::atom()}.
+-spec max(List) -> integer() when 
+      List::list();
+      ([]) -> {undefined, empty_list}.
 
 max([]) ->
     {undefined, empty_list};

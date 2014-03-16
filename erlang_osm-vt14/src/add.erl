@@ -44,7 +44,7 @@ start(A,B,Base,Options) ->
     receive_result().
       
 
-%%@doc get options from option list, with max split <= Max_size
+%%@doc get options from option list
 -spec get_options(List,Max_size) -> {atom(),{integer(),integer()},integer()} when
       List :: list(),
       Max_size :: integer().

@@ -16,14 +16,14 @@
 
 new() -> {fifo, [], []}.
  
-%% @doc Size of fifo
+%% @doc Size of FIFO.
 -spec size(Fifo) -> integer() when
       Fifo::fifo().
 
 size({fifo, In, Out}) ->
     length(In) + length(Out).
 
-%% @doc Pushes an item on the stack
+%% @doc Pushes an item on the FIFO.
 -spec push({fifo,list(),list()},atom()) -> {fifo,list(),list()}.
 
 %% To make it fast to push new values, add a new value to the head of
@@ -32,7 +32,8 @@ size({fifo, In, Out}) ->
 push({fifo, In, Out}, X) -> 
     {fifo,[X|In],Out}.
 
-%% @doc Pops an item from the stack.
+
+%% @doc Pops an item from the FIFO.
 %% @throws 'empty fifo'
 -spec pop({fifo,list(),list()}) -> {fifo,list(),list()}.
 
@@ -54,7 +55,7 @@ pop({fifo, In, []}) ->
     pop({fifo,[],lists:reverse(In)}).
 
 
-%% @doc TODO Add a description
+%% @doc Returns true if the FIFO is empty, otherwise false.
 -spec empty(Fifo) -> boolean() when Fifo::fifo().
 
 empty({fifo, [], []}) ->

@@ -23,7 +23,17 @@ hello() ->
 %%%%%%%%%%  Recursive functions %%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @doc TODO: add description here
+
+%% @doc Prints "N Hello!" to the terminal N times while N is being decremented by one.
+%% === Example ===
+%% <div class="example">```
+%% 23> tutorial:hello(5).
+%% 5 Hello!
+%% 4 Hello!
+%% 3 Hello!
+%% 2 Hello!
+%% 1 Hello!'''
+%% </div>
 -spec hello(N::integer()) -> ok.
 
 hello(0) ->

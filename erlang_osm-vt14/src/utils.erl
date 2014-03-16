@@ -7,7 +7,8 @@
 -export([seqs/1, filter/2, split/2, pad/3, pad_two/3, print_text/3, get_result/1]).
 
 -export_type([result_list/0]).
-%%@type Type containing how the addition of our numbers were made.
+
+%%Type containing how the addition of our numbers were made.
 -opaque result_list() :: [{[{integer(),integer()}, ...],integer()}, ...]. 
 
 %% To use EUnit we must include this.
@@ -173,7 +174,7 @@ pad(List, N, P) when N > 0 ->
 %% === Example ===
 %% 
 %% <div class="example">```
-%% 1> utils:pad([1,2,3], [3], 0).
+%% 1> utils:pad_two([1,2,3], [3], 0).
 %% {[1,2,3], [0,0,3]}'''
 %% </div>
 
@@ -209,13 +210,16 @@ inner_list_length([{List,_}|_])-> length(List).
     
 
 %%@doc prints text representing the addition made.
-%%Example
-%%        00 
-%%   -------
-%%        12
-%%        13
-%%  +-------
-%%        25
+%% === Example ===
+%% <div class="example">```
+%%      00
+%%  -------
+%%       12
+%%       13
+%% +-------
+%%       25'''
+%% </div>
+
 -spec print_text(A,B,Sum_carry_list)-> ok when
       A :: list(),
       B :: list(),
