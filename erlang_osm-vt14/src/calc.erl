@@ -38,7 +38,7 @@
       Options :: {Base, Split, Spawn, Sleep}.
 
 
-start_calc(ParentPid, LeftSplit, RightSplit, {Base, Split, Spawn, Sleep}) ->
+start_calc(ParentPid, LeftSplit, RightSplit, {Base, Split, Spawn, Sleep}) when Base >= 1 ->
     spawn_calculators(LeftSplit, RightSplit, Split, {Base, Spawn, Sleep}, ParentPid).
 
 

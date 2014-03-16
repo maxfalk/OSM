@@ -234,7 +234,7 @@ print_text(A,B,Sum_carry_pos_list)->
     Carry_list = get_carrys(Sorted_list),
     Result_list = get_result(Sorted_list),
     %% print the result
-    print_blankspace((length(A)+1)- length(Carry_list)), %%Make sure we print on the same row.
+    print_blankspace((length(A) + 1) - length(Carry_list)), %%Make sure we print on the same row.
     print_number(Carry_list), %%print carrys in right order, skip first carry will alwats be 0
     print_line(Length), %% print line of right length
     print_blankspace(2),

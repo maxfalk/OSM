@@ -17,7 +17,7 @@
       B::integer(), 
       Base::integer().
 
-start(A, B, Base) ->
+start(A, B, Base) when Base >= 2 ->
     {Left, Right} = utils:pad_two(integer_to_intlist(A,Base), integer_to_intlist(B,Base), 0),
     Split = length(Left),
     {LeftSplit, RightSplit} = {utils:split(Left, Split), utils:split(Right, Split)},
@@ -35,7 +35,7 @@ start(A, B, Base) ->
       Option::atom() | tuple(),
       Options::[Option].
 
-start(A,B,Base,Options) ->
+start(A,B,Base,Options) when Base >= 2 ->
     {Left, Right} = utils:pad_two(integer_to_intlist(A,Base), integer_to_intlist(B,Base), 0),    
     {Spawn,Sleep,Split} = get_options(Options,length(Left)),                                      
     {LeftSplit, RightSplit} = {utils:split(Left, Split), utils:split(Right, Split)},

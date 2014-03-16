@@ -186,10 +186,10 @@ pmax_random_plist_test() ->
     ?assertEqual(lists:max(L), pmax(L, 10)).
 
 
-get_list_for_pid_test()->    
-    List =[{spawn(fun()-> exit(0) end), random_list(10)} || lists:seq(0,9)],
-    {L1,Pid1} = hd(List),
-    ?assert({L1,T1} =:= get_list_for_pid(List,Pid1)),
-    {L2,Pid2} = hd(T1),
-    ?assert({L2,T2} =:= get_list_for_pid(T1,Pid2)).
+%%get_list_for_pid_test()->    
+%%    List =[{spawn(fun()-> exit(0) end), random_list(10)} || lists:seq(0,9)],
+%%    {L1,Pid1} = hd(List),
+%%    ?assert({L1,T1} =:= get_list_for_pid(List,Pid1)),
+%%    {L2,Pid2} = hd(T1),
+%%    ?assert({L2,T2} =:= get_list_for_pid(T1,Pid2)).
     
