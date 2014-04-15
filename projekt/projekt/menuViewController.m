@@ -28,25 +28,32 @@
     _user.text = @"Joel Sandberg";
     
 
+    //fetch win ratio from server
+    double winRatio = 0.33;
+    
+    double winRatioToDegrees = winRatio * 360;
+    
     UIBezierPath *path1 = [UIBezierPath bezierPathWithArcCenter:CGPointMake(60, 60)
                                                          radius:50
                                                      startAngle:DEGREES_TO_RADIANS(0)+OFFSET
-                                                       endAngle:DEGREES_TO_RADIANS(180)-OFFSET
+                                                       endAngle:DEGREES_TO_RADIANS(winRatioToDegrees)-OFFSET
                                                       clockwise:YES];
     
     UIBezierPath *path2 = [UIBezierPath bezierPathWithArcCenter:CGPointMake(60, 60)
                                                          radius:50
-                                                     startAngle:DEGREES_TO_RADIANS(180)+OFFSET
+                                                     startAngle:DEGREES_TO_RADIANS(winRatioToDegrees)+OFFSET
                                                        endAngle:DEGREES_TO_RADIANS(360)-OFFSET
                                                       clockwise:YES];
     
+    UIColor *green = [UIColor colorWithRed:0.41 green:0.72 blue:0.53 alpha:1];
     UIGraphicsBeginImageContext(CGSizeMake(120, 120));
     [[UIColor blackColor] setStroke];
     path1.lineCapStyle = kCGLineCapRound;
     path1.lineWidth = 15.0f;
-    [[UIColor blackColor] setStroke];
+    [green setStroke];
     [path1 stroke];
     
+    UIColor *red = [UIColor colorWithRed:225/255 green:0/255 blue:0/255 alpha:1];
     path2.lineWidth = 15.0f;
     path2.lineCapStyle = kCGLineCapRound;
     [[UIColor redColor] setStroke];
