@@ -9,9 +9,10 @@
 #import <UIKit/UIKit.h>
 #import <CoreLocation/CoreLocation.h>
 
-@interface projektViewController : UIViewController  <CLLocationManagerDelegate>
+@interface projektViewController : UIViewController  <CLLocationManagerDelegate, UITextFieldDelegate>
 {
     CLLocationManager *locationManager;
 }
+@property (weak, nonatomic) IBOutlet UIButton *loginButton;
 
 @end

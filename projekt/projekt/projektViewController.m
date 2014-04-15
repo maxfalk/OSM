@@ -14,10 +14,11 @@
 @interface projektViewController ()
 @property (weak, nonatomic) IBOutlet UITextField *usernameField;
 @property (weak, nonatomic) IBOutlet UITextField *passwordField;
+@property (weak, nonatomic) IBOutlet UIActivityIndicatorView *wheel;
 
 @end
 
-@implementation projektViewController
+@implementation projektViewController 
 
 - (void)viewDidLoad
 {
@@ -42,6 +43,11 @@
    // _passwordField.font = [UIFont systemFontOfSize:12.0];
     [_passwordField setSecureTextEntry:YES];
     
+    _usernameField.delegate = self;
+    _passwordField.delegate = self;
+    
+    _wheel.hidden=YES;
+    
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -62,55 +68,46 @@
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations{
-    NSLog(@"latitude= %f longitude = %f", manager.location.coordinate.latitude, manager.location.coordinate.latitude);
+    NSLog(@"lat:%f long:%f", manager.location.coordinate.latitude, manager.location.coordinate.latitude);
 }
 
 
--(void)textFieldDidBeginEditing:(UITextField *)textField {
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(keyboardWillShow:)
-                                                 name:UIKeyboardWillShowNotification
-                                               object:nil];
-}
-
-- (void)keyboardWillShow:(NSNotification *)note {
-    // create custom button
-    UIButton *doneButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    doneButton.frame = CGRectMake(0, 163, 106, 53);
-    doneButton.adjustsImageWhenHighlighted = NO;
-    [doneButton setImage:[UIImage imageNamed:@"menyicon"] forState:UIControlStateNormal];
-    [doneButton setImage:[UIImage imageNamed:@"menyicon"] forState:UIControlStateHighlighted];
-    [doneButton addTarget:self action:@selector(doneButton:) forControlEvents:UIControlEventTouchUpInside];
-    
-    if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"7.0")) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            UIView *keyboardView = [[[[[UIApplication sharedApplication] windows] lastObject] subviews] firstObject];
-            [doneButton setFrame:CGRectMake(0, keyboardView.frame.size.height - 53, 106, 53)];
-            [keyboardView addSubview:doneButton];
-            [keyboardView bringSubviewToFront:doneButton];
-            
-            [UIView animateWithDuration:[[note.userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] floatValue]-.02
-                                  delay:.0
-                                options:[[note.userInfo objectForKey:UIKeyboardAnimationCurveUserInfoKey] intValue]
-                             animations:^{
-                                 self.view.frame = CGRectOffset(self.view.frame, 0, 0);
-                             } completion:nil];
-        });
-    }else {
-        // locate keyboard view
-        dispatch_async(dispatch_get_main_queue(), ^{
-            UIWindow* tempWindow = [[[UIApplication sharedApplication] windows] objectAtIndex:1];
-            UIView* keyboard;
-            for(int i=0; i<[tempWindow.subviews count]; i++) {
-                keyboard = [tempWindow.subviews objectAtIndex:i];
-                // keyboard view found; add the custom button to it
-                if([[keyboard description] hasPrefix:@"UIKeyboard"] == YES)
-                    [keyboard addSubview:doneButton];
-            }
-        });
+- (BOOL)textFieldShouldReturn:(UITextField *)theTextField {
+    if (theTextField == _passwordField) {
+        [theTextField resignFirstResponder];
+    } else if (theTextField == _usernameField) {
+        [_passwordField becomeFirstResponder];
     }
+    return YES;
 }
+
+-(BOOL)textViewShouldEndEditing:(UITextView *)textView{
+    [textView resignFirstResponder];
+    return YES;
+}
+
+- (IBAction)loginButtonPressed:(id)sender {
+    _wheel.hidden = NO;
+    [_wheel startAnimating];
+
+    [_loginButton setTitle:@"" forState:UIControlStateNormal];
+    [_passwordField resignFirstResponder];
+    
+    double delayInSeconds = 2.0;
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+         [self performSegueWithIdentifier:@"login" sender:self];
+        _wheel.hidden=YES;
+        [_wheel stopAnimating];
+        [_loginButton setTitle:@"Logga in" forState:UIControlStateNormal];
+    });
+    
+    
+    
+}
+
+
+
 
 @end
 
