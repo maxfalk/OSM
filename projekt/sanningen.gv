@@ -1,0 +1,15 @@
+digraph “datarace”{
+
+MasterSupervisor -> NewSupervisor;
+MasterSupervisor -> ClientMasterSupervisor;
+ClientMasterSupervisor -> ClientSupervisor1;
+ClientMasterSupervisor -> ClientSupervisor2;
+ClientSupervisor1 -> ClientServer1;
+ClientServer1 -> Worker1;
+ClientServer1 -> Worker2;
+ClientSupervisor2 -> ClientServer2;
+ClientServer2 -> Worker3;
+ClientServer2 -> Worker4;
+NewSupervisor -> New;
+
+}

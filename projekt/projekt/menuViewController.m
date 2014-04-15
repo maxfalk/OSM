@@ -26,38 +26,25 @@
     //fetch username from server
     _user.text = @"Joel Sandberg";
     
-    
-    
-    DrawView* drawableView = [[[DrawView alloc] initWithFrame:CGRectMake(0,0,320,50)] autorelease];
-    drawableView.drawBlock = ^(UIView* v,CGContextRef context)
-    {
-        CGPoint startPoint = CGPointMake(0,v.bounds.size.height-1);
-        CGPoint endPoint = CGPointMake(v.bounds.size.width,v.bounds.size.height-1);
-        
-        CGContextSetStrokeColorWithColor(context, [UIColor grayColor].CGColor);
-        CGContextSetLineWidth(context, 1);
-        CGContextMoveToPoint(context, startPoint.x + 0.5, startPoint.y + 0.5);
-        CGContextAddLineToPoint(context, endPoint.x + 0.5, endPoint.y + 0.5);
-        CGContextStrokePath(context);
-    };
-    [self.view addSubview:drawableView];
-    
-    
-    /*
-    
-    UIBezierPath *aPath = [UIBezierPath bezierPathWithArcCenter:CGPointMake(150, 150)
-                                                         radius:75
+
+    UIBezierPath *aPath = [UIBezierPath bezierPathWithArcCenter:CGPointMake(60, 60)
+                                                         radius:55
                                                      startAngle:0
-                                                       endAngle:DEGREES_TO_RADIANS(135)
+                                                       endAngle:DEGREES_TO_RADIANS(360)
                                                       clockwise:YES];
     
-    UIGraphicsBeginImageContext(self.view.frame.size);
+    UIGraphicsBeginImageContext(CGSizeMake(120, 120));
     [[UIColor blackColor] setStroke];
-    [aPath fill];
+    aPath.lineCapStyle = kCGLineCapRound;
+    aPath.lineWidth = 9.0f;
+    [aPath stroke];
     self.drawpad.image = UIGraphicsGetImageFromCurrentImageContext();
+    
+    [self drawRect:CGRectMake(0, 0, 100, 100)];
+    
     UIGraphicsEndImageContext();
     
-    UIBezierPath *path = [[UIBezierPath alloc] init];
+   /* UIBezierPath *path = [[UIBezierPath alloc] init];
     [path moveToPoint:CGPointMake(50.0f, 50.0f)];
     [path addLineToPoint:CGPointMake(270.0f, 50.0f)];
     [path addLineToPoint:CGPointMake(270.0f, 500.0f)];
@@ -95,6 +82,35 @@
 
 }
 
+- (void)drawRect:(CGRect)rect
+{
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(context, [[UIColor blueColor] CGColor]);
+    
+    UIBezierPath *blueHalf = [UIBezierPath bezierPath];
+    [blueHalf addArcWithCenter:CGPointMake(100, 100) radius:90.0 startAngle:-M_PI_2 endAngle:M_PI_2 clockwise:YES];
+    [blueHalf setLineWidth:4.0];
+    [blueHalf stroke];
+    
+    CGContextSetStrokeColorWithColor(context, [[UIColor redColor] CGColor]);
+    
+    UIBezierPath *redHalf = [UIBezierPath bezierPath];
+    [redHalf addArcWithCenter:CGPointMake(100.0, 100.0) radius:90.0 startAngle:M_PI_2 endAngle:3.0 * M_PI_2 clockwise:YES];
+    [redHalf setLineWidth:4.0];
+    [redHalf stroke];
+}
+
+
+- (void)drawCircle
+{
+    CGPoint center = CGPointMake(100, 100);
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    CGContextBeginPath(ctx);
+    
+    //6 CGContextSetLineWidth(ctx, 5);
+    CGContextAddArc(ctx, center.x, center.y, 100.0, 0, 2*M_PI, 0);
+    CGContextStrokePath(ctx);
+}
 
 /*
 #pragma mark - Navigation
@@ -106,5 +122,4 @@
     // Pass the selected object to the new view controller.
 }
 */
-
 @end

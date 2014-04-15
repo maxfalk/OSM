@@ -1,0 +1,7 @@
+digraph “datarace”{
+
+Client->Server;
+Server->Client;
+Server->Database;
+Database->Server;
+}
