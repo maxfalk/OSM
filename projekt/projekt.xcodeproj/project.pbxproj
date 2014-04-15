@@ -21,6 +21,7 @@
 		C7B7C7FE18FD17EC0096DB88 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C7B7C7E018FD17EC0096DB88 /* UIKit.framework */; };
 		C7B7C80618FD17EC0096DB88 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = C7B7C80418FD17EC0096DB88 /* InfoPlist.strings */; };
 		C7B7C80818FD17EC0096DB88 /* projektTests.m in Sources */ = {isa = PBXBuildFile; fileRef = C7B7C80718FD17EC0096DB88 /* projektTests.m */; };
+		C7ECED5318FD4A0000C3EE81 /* menuViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = C7ECED5218FD4A0000C3EE81 /* menuViewController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +54,8 @@
 		C7B7C80318FD17EC0096DB88 /* projektTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "projektTests-Info.plist"; sourceTree = "<group>"; };
 		C7B7C80518FD17EC0096DB88 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		C7B7C80718FD17EC0096DB88 /* projektTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = projektTests.m; sourceTree = "<group>"; };
+		C7ECED5118FD4A0000C3EE81 /* menuViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = menuViewController.h; sourceTree = "<group>"; };
+		C7ECED5218FD4A0000C3EE81 /* menuViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = menuViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +118,8 @@
 				C7B7C7EB18FD17EC0096DB88 /* projektAppDelegate.h */,
 				C7B7C7EC18FD17EC0096DB88 /* projektAppDelegate.m */,
 				C7B7C7EE18FD17EC0096DB88 /* Main.storyboard */,
+				C7ECED5118FD4A0000C3EE81 /* menuViewController.h */,
+				C7ECED5218FD4A0000C3EE81 /* menuViewController.m */,
 				C7B7C7F118FD17EC0096DB88 /* projektViewController.h */,
 				C7B7C7F218FD17EC0096DB88 /* projektViewController.m */,
 				C7B7C7F418FD17EC0096DB88 /* Images.xcassets */,
@@ -253,6 +258,7 @@
 				C7B7C7ED18FD17EC0096DB88 /* projektAppDelegate.m in Sources */,
 				C7B7C7E918FD17EC0096DB88 /* main.m in Sources */,
 				C7B7C7F318FD17EC0096DB88 /* projektViewController.m in Sources */,
+				C7ECED5318FD4A0000C3EE81 /* menuViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -457,6 +463,7 @@
 				C7B7C80D18FD17EC0096DB88 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		C7B7C80E18FD17EC0096DB88 /* Build configuration list for PBXNativeTarget "projektTests" */ = {
 			isa = XCConfigurationList;
@@ -465,6 +472,7 @@
 				C7B7C81018FD17EC0096DB88 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
