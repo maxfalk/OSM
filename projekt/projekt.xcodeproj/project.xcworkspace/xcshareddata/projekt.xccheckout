@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>FABB59F5-7477-4B66-8DB7-107EF3E17BA5</string>
+	<key>IDESourceControlProjectName</key>
+	<string>projekt</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>D4F07379-2252-4EBC-9FC4-361BF0E751FD</key>
+		<string>https://github.com/maxfalk/OSM.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>projekt/projekt.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>D4F07379-2252-4EBC-9FC4-361BF0E751FD</key>
+		<string>../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/maxfalk/OSM.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>D4F07379-2252-4EBC-9FC4-361BF0E751FD</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>D4F07379-2252-4EBC-9FC4-361BF0E751FD</string>
+			<key>IDESourceControlWCCName</key>
+			<string>projekt</string>
+		</dict>
+	</array>
+</dict>
+</plist>
