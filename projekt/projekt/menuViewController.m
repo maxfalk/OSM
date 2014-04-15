@@ -6,7 +6,8 @@
 //  Copyright (c) 2014 OSM-projekt. All rights reserved.
 //
 
-#define   DEGREES_TO_RADIANS(degrees)  ((3.14159265359 * degrees)/ 180)
+#define   DEGREES_TO_RADIANS(degrees)  ((3.14159265359 * (degrees-90))/ 180)
+#define OFFSET ((3.14159265359 * (10))/ 180)
 #import "menuViewController.h"
 
 @interface menuViewController ()
@@ -27,17 +28,29 @@
     _user.text = @"Joel Sandberg";
     
 
-    UIBezierPath *aPath = [UIBezierPath bezierPathWithArcCenter:CGPointMake(60, 60)
-                                                         radius:55
-                                                     startAngle:0
-                                                       endAngle:DEGREES_TO_RADIANS(360)
+    UIBezierPath *path1 = [UIBezierPath bezierPathWithArcCenter:CGPointMake(60, 60)
+                                                         radius:50
+                                                     startAngle:DEGREES_TO_RADIANS(0)+OFFSET
+                                                       endAngle:DEGREES_TO_RADIANS(180)-OFFSET
+                                                      clockwise:YES];
+    
+    UIBezierPath *path2 = [UIBezierPath bezierPathWithArcCenter:CGPointMake(60, 60)
+                                                         radius:50
+                                                     startAngle:DEGREES_TO_RADIANS(180)+OFFSET
+                                                       endAngle:DEGREES_TO_RADIANS(360)-OFFSET
                                                       clockwise:YES];
     
     UIGraphicsBeginImageContext(CGSizeMake(120, 120));
     [[UIColor blackColor] setStroke];
-    aPath.lineCapStyle = kCGLineCapRound;
-    aPath.lineWidth = 9.0f;
-    [aPath stroke];
+    path1.lineCapStyle = kCGLineCapRound;
+    path1.lineWidth = 15.0f;
+    [[UIColor blackColor] setStroke];
+    [path1 stroke];
+    
+    path2.lineWidth = 15.0f;
+    path2.lineCapStyle = kCGLineCapRound;
+    [[UIColor redColor] setStroke];
+    [path2 stroke];
     self.drawpad.image = UIGraphicsGetImageFromCurrentImageContext();
     
     [self drawRect:CGRectMake(0, 0, 100, 100)];
