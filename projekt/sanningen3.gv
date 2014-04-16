@@ -1,0 +1,13 @@
+digraph “datarace”{
+
+UI->New;
+New->ClientManager;
+ClientManager->UI;
+InternalState->ClientManager;
+ClientManager->DBLogic;
+DBLogic->ClientManager;
+ClientManager->GPSCalc;
+GPSCalc->ClientManager;
+ClientManager->MatchLogic;
+DBLogic->DB;
+}
